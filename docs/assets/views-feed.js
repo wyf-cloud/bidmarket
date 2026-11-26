@@ -4,7 +4,7 @@
 import {
   db, state, CATEGORIES, TASK_STATUS, BID_STATUS, STATUS_HINT,
   esc, money, budgetText, dateText, timeText, sizeText, stars,
-  toast, zhError, currentUid, needLogin, go, loadSiteCopy
+  toast, zhError, currentUid, needLogin, go, loadSiteCopy, isExpired, todayStr
 } from './lib.js';
 import {
   taskCard, empty, openDialog, reportDialog, closeDialog, confirmDialog
@@ -133,7 +133,7 @@ function app() { return document.getElementById('app'); }
 async function mountHall(root) {
   if (!root) return;
   const PAGE = 8;
-  const st = { q: '', cat: '', sort: 'new', offset: 0, done: false };
+  const st = { q: '', cat: '', sort: 'new', exp: '', offset: 0, done: false };
 
   root.innerHTML = `
     <div class="filters">
@@ -141,6 +141,11 @@ async function mountHall(root) {
       <select id="hall-cat">
         <option value="">全部类型</option>
         ${CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+      </select>
+      <select id="hall-exp">
+        <option value="">全部时效</option>
+        <option value="active">未过期</option>
+        <option value="expired">已过期</option>
       </select>
       <select id="hall-sort">
         <option value="new">最新发布</option>
@@ -163,6 +168,8 @@ async function mountHall(root) {
       .eq('status', 'open');
     if (st.q) q = q.ilike('title', '%' + st.q + '%');
     if (st.cat) q = q.eq('category', st.cat);
+    if (st.exp === 'expired') q = q.lt('deadline', todayStr());
+    else if (st.exp === 'active') q = q.or('deadline.is.null,deadline.gte.' + todayStr());
     if (st.sort === 'budget') q = q.order('budget_max', { ascending: false, nullsFirst: false });
     else if (st.sort === 'deadline') q = q.order('deadline', { ascending: true, nullsFirst: false });
     else q = q.order('created_at', { ascending: false });
@@ -189,6 +196,7 @@ async function mountHall(root) {
 
   const qEl = root.querySelector('#hall-q');
   const catEl = root.querySelector('#hall-cat');
+  const expEl = root.querySelector('#hall-exp');
   const sortEl = root.querySelector('#hall-sort');
   let timer;
   qEl.oninput = () => {
@@ -196,6 +204,7 @@ async function mountHall(root) {
     timer = setTimeout(() => { st.q = qEl.value.trim(); load(true); }, 280);
   };
   catEl.onchange = () => { st.cat = catEl.value; load(true); };
+  expEl.onchange = () => { st.exp = expEl.value; load(true); };
   sortEl.onchange = () => { st.sort = sortEl.value; load(true); };
   moreBtn.onclick = () => load(false);
 
@@ -276,6 +285,9 @@ export async function viewTask(id) {
     </div>` : ''}
     ${t.status === 'rejected' ? `<div class="alert alert-error">
       该任务未通过审核${t.review_note ? '：' + esc(t.review_note) : ''}。可以修改后重新发布。
+    </div>` : ''}
+    ${t.status === 'open' && isExpired(t) ? `<div class="alert alert-info">
+      投标截止时间已过（${esc(dateText(t.deadline))}），仍可查看，但请注意时效。
     </div>` : ''}
 
     <div class="prose">${esc(t.description)}</div>

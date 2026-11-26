@@ -82,6 +82,19 @@ export function dateText(d) {
   return s.length >= 10 ? s.slice(5, 10) : s;
 }
 
+/** 今天的 YYYY-MM-DD（本地时区） */
+export function todayStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+/** 投标截止时间已过即视为过期；没填截止时间不算过期 */
+export function isExpired(t) {
+  if (!t || !t.deadline) return false;
+  return String(t.deadline).slice(0, 10) < todayStr();
+}
+
 export function timeText(s) {
   if (!s) return '';
   const d = new Date(s);

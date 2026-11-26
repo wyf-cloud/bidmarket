@@ -3,7 +3,7 @@
    ============================================================ */
 import {
   state, db, currentUid, esc, money, budgetText, dateText, sizeText, stars,
-  toast, zhError, signOut, go, downloadFile
+  toast, zhError, signOut, go, downloadFile, isExpired
 } from './lib.js';
 
 export function renderHeader() {
@@ -44,7 +44,8 @@ export function taskCard(t) {
   const short = desc.length > 58 ? desc.slice(0, 58) + '…' : desc;
   const owner = t.owner || {};
   const code = 'BM-' + String(t.id).replace(/-/g, '').slice(0, 6).toUpperCase();
-  return `<a class="card" href="#/task/${esc(t.id)}">
+  const expired = isExpired(t);
+  return `<a class="card${expired ? ' is-expired' : ''}" href="#/task/${esc(t.id)}">
     <div class="task-top">
       <span class="code">${esc(code)}</span>
       <span class="chip status-${esc(t.status)}">${esc(TASK_STATUS_LABEL[t.status] || t.status)}</span>
@@ -54,6 +55,7 @@ export function taskCard(t) {
     <div class="task-foot">
       <strong>${budgetText(t)}</strong>
       <span>截止 ${dateText(t.deadline)}</span>
+      ${expired ? '<span class="expired-tag">已过期</span>' : ''}
       <span class="owner-line">${esc(owner.nickname || '匿名')}${owner.verified ? ' · 认证' : ''}</span>
     </div>
   </a>`;
