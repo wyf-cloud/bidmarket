@@ -112,6 +112,32 @@ export function openDialog(title, bodyHtml, { submitText = '确定', onSubmit, d
   return d;
 }
 
+export function confirmDialog(text, { okText = '确定', danger = false } = {}) {
+  return new Promise((resolve) => {
+    closeDialog();
+    const d = document.createElement('div');
+    d.className = 'dialog-backdrop';
+    d.id = 'dialog';
+    d.innerHTML = `
+      <div class="dialog">
+        <h3>请确认</h3>
+        <p class="dialog-text">${esc(text)}</p>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" data-no>取消</button>
+          <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-yes>${esc(okText)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(d);
+
+    const done = (v) => { closeDialog(); resolve(v); };
+    d.querySelector('[data-yes]').onclick = () => done(true);
+    d.querySelector('[data-no]').onclick = () => done(false);
+    d.addEventListener('click', (e) => { if (e.target === d) done(false); });
+    const yes = d.querySelector('[data-yes]');
+    if (yes) setTimeout(() => yes.focus(), 30);
+  });
+}
+
 export function reportDialog(targetType, targetId, onDone) {
   const reasons = targetType === 'task'
     ? ['虚假任务', '违规内容', '涉嫌诈骗', '重复发布', '其他']

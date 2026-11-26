@@ -5,7 +5,7 @@ import {
   db, state, esc, toast, zhError, currentUid, needLogin, loadProfile,
   dateText, fullTime, TASK_STATUS, stars
 } from './lib.js';
-import { empty, renderHeader, openDialog } from './ui.js';
+import { empty, renderHeader, openDialog, confirmDialog } from './ui.js';
 
 const app = () => document.getElementById('app');
 
@@ -186,7 +186,7 @@ async function renderUsers(body) {
   body.querySelectorAll('[data-ban]').forEach(btn => {
     btn.onclick = async () => {
       const next = btn.dataset.cur !== 'true';
-      if (next && !confirm('封禁后该用户无法发布任务、报价和发消息，确认？')) return;
+      if (next && !(await confirmDialog('封禁后该用户无法发布任务、报价和发消息', { okText: '封禁', danger: true }))) return;
       btn.disabled = true;
       const { error: e } = await db.from('profiles')
         .update({ banned: next }).eq('id', btn.dataset.ban);
@@ -221,7 +221,7 @@ async function renderTasks(body) {
 
   body.querySelectorAll('[data-del-task]').forEach(btn => {
     btn.onclick = async () => {
-      if (!confirm('确认下架并删除这个任务？')) return;
+      if (!(await confirmDialog('下架会删除该任务及其报价、消息和评价，不可恢复', { okText: '删除', danger: true }))) return;
       btn.disabled = true;
       const { error: e } = await db.from('tasks').delete().eq('id', btn.dataset.delTask);
       if (e) { btn.disabled = false; toast(zhError(e.message), 'error'); return; }

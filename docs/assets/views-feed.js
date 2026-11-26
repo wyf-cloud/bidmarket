@@ -7,7 +7,7 @@ import {
   toast, zhError, currentUid, needLogin, go
 } from './lib.js';
 import {
-  taskCard, empty, openDialog, reportDialog, closeDialog
+  taskCard, empty, openDialog, reportDialog, closeDialog, confirmDialog
 } from './ui.js';
 import { CONTENT } from './content.js';
 
@@ -443,7 +443,7 @@ function bindTask(t, ctx) {
   const withdraw = document.getElementById('withdraw');
   if (withdraw) {
     withdraw.onclick = async () => {
-      if (!confirm('确认撤回这次报价？')) return;
+      if (!(await confirmDialog('确认撤回这次报价？', { okText: '撤回' }))) return;
       const { error } = await db.from('bids').update({ status: 'withdrawn' })
         .eq('task_id', t.id).eq('provider_id', currentUid());
       if (error) { toast(zhError(error.message), 'error'); return; }
@@ -454,7 +454,7 @@ function bindTask(t, ctx) {
 
   document.querySelectorAll('.accept').forEach(btn => {
     btn.onclick = async () => {
-      if (!confirm('选定这个报价？其余报价会自动置为未中标。')) return;
+      if (!(await confirmDialog('选定这个报价？其余报价会自动置为未中标。', { okText: '选定' }))) return;
       btn.disabled = true;
       const { error } = await db.rpc('accept_bid', { p_bid_id: btn.dataset.bid });
       btn.disabled = false;
@@ -470,7 +470,7 @@ function bindTask(t, ctx) {
       const ask = act === 'deliver' ? '确认已交付？'
         : act === 'complete' ? '确认任务完成？确认后进入互评。'
         : '确认取消任务？';
-      if (!confirm(ask)) return;
+      if (!(await confirmDialog(ask, { okText: act === 'cancel' ? '确认取消' : '确定', danger: act === 'cancel' }))) return;
       const fn = act === 'deliver' ? 'mark_delivered'
         : act === 'complete' ? 'confirm_complete' : 'cancel_task';
       btn.disabled = true;
