@@ -12,6 +12,7 @@ import { viewAdmin, viewNotFound } from './views-admin.js';
 import { viewHow } from './views-how.js';
 import { viewHealth } from './views-health.js';
 import { viewTerms, viewPrivacy } from './views-legal.js';
+import { viewGame } from './views-game.js';
 
 const app = () => document.getElementById('app');
 
@@ -49,6 +50,7 @@ async function render() {
     else if (page === 'privacy') viewPrivacy();
     else if (page === 'setup') renderSetup();
     else if (page === 'how') viewHow();
+    else if (page === 'game') await viewGame();
     else viewNotFound();
     window.scrollTo(0, 0);
   } catch (e) {

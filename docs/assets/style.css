@@ -843,3 +843,46 @@ input[type="checkbox"], input[type="radio"] {
 @media (max-width: 760px) {
   .filters { grid-template-columns: 1fr; }
 }
+
+/* ---------- 小游戏 ---------- */
+.game-frame {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background: #f4f1ea;
+}
+.game-frame canvas { display: block; width: 100%; height: auto; }
+.game-touch {
+  display: none;
+  position: absolute; left: 0; right: 0; bottom: 12px;
+  justify-content: space-between; padding: 0 16px;
+  pointer-events: none;
+}
+.game-touch button {
+  pointer-events: auto;
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .8);
+  background: rgba(255, 255, 255, .5);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font-size: 18px; color: var(--ink);
+  user-select: none; touch-action: none;
+}
+.game-touch button:active { background: rgba(255, 255, 255, .8); }
+@media (pointer: coarse) { .game-touch { display: flex; } }
+
+.game-rows { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-top: 24px; }
+.game-rows .panel { margin: 0; }
+
+.lb-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.lb-row:last-child { border-bottom: 0; }
+.lb-rank { font-family: var(--font-mono); width: 28px; color: var(--muted); text-align: center; flex: none; }
+.lb-rank.top { color: var(--seal); font-weight: 600; }
+.lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-score { font-family: var(--font-mono); font-variant-numeric: tabular-nums; flex: none; }
+
+@media (max-width: 900px) { .game-rows { grid-template-columns: 1fr; } }
