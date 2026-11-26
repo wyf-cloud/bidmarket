@@ -38,7 +38,6 @@ export function startGame(canvas,{onFinish}={}){
     root.dataset.gameMode=mode;
     set('chapter',`${pad(s.index+1)} / 06`);set('area',l.area);set('timer',mmss(s.time));set('score',format(s.score));
     set('health','♥'.repeat(p.hp)+'♡'.repeat(3-p.hp));set('pages',`${s.count} / ${l.required}`);set('bonus',s.earned?'已取得':`≥ ${l.bonus} 页`);
-    set('attempts',`剩余 ${s.attempts} 次`);
     set('gear',[p.stapler?'订书机':'',p.coffee>0?`咖啡 ${Math.ceil(p.coffee)}s`:'',p.shield>0?`U 盘 ${Math.ceil(p.shield)}s`:''].filter(Boolean).join(' · ')||'顶砖获取道具');
     fields.timer.toggleAttribute('data-urgent',s.time<=30);
     fields.health.setAttribute('aria-label',`生命 ${p.hp} / 3`);
@@ -59,8 +58,7 @@ export function startGame(canvas,{onFinish}={}){
       ready:['截标前夜 · 第 01 章','标书员大冒险','小张只剩最后一晚。捡齐散落的标书页码，穿过六个办公区域，把完整标书送到投标窗口。','开始投标旅程','键盘或触屏 · 支持静音'],
       paused:[l.area,'已暂停','本章的倒计时暂停了，随时继续。','继续游戏','P / Esc'],
       clear:[`章节 ${pad(s.index+1)} · ${l.chapter}`,'校对通过',`本章收齐 ${s.count} 页${s.earned?'，已获得加分资质证书':''}。下一站：${nav[s.index+1]?.querySelector('b')?.textContent ?? '投标窗口'}。`,'进入下一章','Enter'],
-      retry:[`章节 ${pad(s.index+1)} · ${l.name}`,'本章需重试',`${s.message}。剩余 ${s.attempts} 次机会，已通过的章节会保留。`,'重试本章','Enter'],
-      lost:['投标回执 · 本轮结束','交付未完成',`${s.message}。本轮抵达第 ${s.index+1} 章，成绩 ${format(s.score)} 分。`,'再来一局','Enter'],
+      lost:s.result&&['投标回执 · 交付未完成','本局结算',`${s.message}。抵达第 ${s.result.level} 章「${l.name}」，成绩 ${format(s.result.score)} 分，用时 ${mmss(s.result.duration)}。`,'再来一局','Enter'],
       won:['投标回执 · 六章齐备','中标成功！',`小张赶在截止前提交了完整标书。共收集 ${s.totalPages} 页、${s.certificates} 张资质证书，得到 ${format(s.score)} 分。`,'再玩一次','Enter']
     }[mode];
     if(info){for(const [i,key] of ['tag','title','copy','buttonHint','shortcut'].entries())set(key,info[i]);}
@@ -73,7 +71,10 @@ export function startGame(canvas,{onFinish}={}){
     if(e.altKey||e.ctrlKey||e.metaKey)return;
     const key=e.code;
     if(!root.contains(document.activeElement) || e.target.closest?.('input,textarea,select,[contenteditable=true]'))return;
-    if(e.target.closest?.('button')&&(key==='Space'||key==='Enter'))return;
+    if(key==='Space'||key==='Enter'){
+      if(s.result&&e.repeat){e.preventDefault();return;}
+      if(e.target.closest?.('button'))return;
+    }
     if(key==='Enter'&&s.mode!=='play'&&!e.repeat){e.preventDefault();begin();return;}
     if((key==='KeyP'||key==='Escape')&&s.mode==='play'&&!e.repeat){e.preventDefault();togglePause();return;}
     if(paused||s.mode!=='play'||!forKey[key])return;
@@ -115,7 +116,7 @@ export function startGame(canvas,{onFinish}={}){
       const input={left:held('left'),right:held('right'),fire:held('fire'),jump};
       while(carry>=STEP){step(s,input);carry-=STEP;jump=false;input.jump=false;}
     }else carry=0;
-    if(s.mode==='play'&&(oldMode==='retry'||oldMode==='won'||oldMode==='lost'||oldIndex!==s.index))cam=0;
+    if(s.mode==='play'&&(oldMode==='won'||oldMode==='lost'||oldIndex!==s.index))cam=0;
     oldMode=s.mode;oldIndex=s.index;
     const dest=Math.max(0,Math.min(s.level.width-view,s.p.x-view*.32));
     cam=paused?cam:cam+(dest-cam)*Math.min(1,elapsed*11);

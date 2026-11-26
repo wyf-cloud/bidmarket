@@ -46,7 +46,7 @@ export function viewGame() {
             </div>
           </div>
         </div>
-        <div class="game-readout"><span>资质证书 ${field('bonus')}</span><span>${field('attempts')}</span><span>道具 ${field('gear')}</span></div>
+        <div class="game-readout"><span>资质证书 ${field('bonus')}</span><span>道具 ${field('gear')}</span></div>
         <div class="game-touch" role="group" aria-label="触屏操作">
           <div><button type="button" data-game-control="left" aria-label="左移">←</button><button type="button" data-game-control="right" aria-label="右移">→</button></div>
           <div><button type="button" data-game-control="fire">发射</button><button type="button" data-game-control="jump">跳跃</button></div>

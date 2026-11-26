@@ -5,24 +5,23 @@ const approach = (v,to,by) => v<to ? Math.min(v+by,to) : Math.max(v-by,to);
 const crossX=(a,b,pad=0)=>a.x+a.w>b.x+pad && a.x<b.x+b.w-pad;
 const hit=(a,b)=>crossX(a,b) && a.y+a.h>b.y && a.y<b.y+b.h;
 const names = {coffee:'咖啡冲刺',usb:'U 盘护盾',stapler:'订书机已装载'};
-const retryText = {fall:'掉进了漏页坑',shred:'碰到了碎纸机',time:'本章截止时间已到',damage:'校对用尽了耐心'};
+const failureText = {fall:'掉进了漏页坑',shred:'碰到了碎纸机',time:'本章截止时间已到',damage:'三颗心已耗尽'};
 const size = {typo:[33,34],bug:[38,25],ghost:[44,53]};
 
 export function createRun(play = false) {
-  const s={index:0, score:0, totalPages:0, certificates:0, attempts:3, duration:0, mode:'ready', events:[], result:null};
+  const s={index:0, score:0, totalPages:0, certificates:0, duration:0, mode:'ready', events:[], result:null};
   load(s,0);
   s.mode=play?'play':'ready';
   return s;
 }
 function load(s,index) {
   const level=levels[index];
-  Object.assign(s,{index,level,age:0,time:level.time,count:0,earned:false,mode:'brief',message:'',hintTime:0,sceneTime:0,
+  Object.assign(s,{index,level,age:0,time:level.time,count:0,earned:false,mode:'brief',message:'',death:null,hintTime:0,sceneTime:0,
     fast:false,locked:false,bolts:[],risks:[],bits:[],
     p:{x:82,y:FLOOR-44,w:28,h:44,vx:0,vy:0,facing:1,hp:3,grounded:true,ride:-1,coyote:.1,buffer:0,flash:0,coffee:0,shield:0,stapler:false,cool:0,slip:false},
     solids:level.solids.map((r,i)=>({...r,id:i,bx:r.x,by:r.y,dx:0,dy:0,used:false})), pages:level.pages.map(r=>({...r,taken:false})),
     enemies:level.enemies.map((r,i)=>({...r,id:i,home:r.x,base:r.y,w:size[r.kind][0],h:size[r.kind][1], y:r.y-size[r.kind][1], active:r.kind!=='ghost',dead:false,stun:0,kick:0,dir:-1})),
     boss:level.boss ? {x:level.boss.x,y:FLOOR-82,w:104,h:82,hp:9,max:9,phase:1,active:false,dead:false,flash:0,clock:1.45,wind:0,burst:0,attack:0,dir:-1,dash:0,vy:0} : null});
-  s.base={score:s.score,totalPages:s.totalPages,certificates:s.certificates};
 }
 function emit(s,id){s.events.push(id);}
 export function drain(s){return s.events.splice(0);}
@@ -42,23 +41,21 @@ function finish(s,won){
 }
 function fail(s,why) {
   if(s.mode!=='play')return;
-  s.attempts--;s.message=retryText[why];s.sceneTime=0; s.death=why;
+  s.message=failureText[why];s.death=why;
+  if(why==='fall'||why==='shred')s.p.hp=0;
   particles(s,s.p.x+14,Math.min(FLOOR-15,s.p.y+20),'#f6fbff',13,true);
-  if(s.attempts<=0) finish(s,false);
-  else {s.mode='retry';emit(s,'lose');}
+  finish(s,false);
 }
 export function confirm(s){
   if(s.mode==='ready' || s.mode==='brief'){s.mode='play';s.sceneTime=0;emit(s,'key');}
   else if(s.mode==='clear'){load(s,s.index+1);s.mode='play';notice(s,s.level.note,5);emit(s,'key');}
-  else if(s.mode==='retry'){
-    Object.assign(s,s.base);load(s,s.index);s.mode='play';emit(s,'key');
-  }
   else if(s.mode==='won' || s.mode==='lost') {Object.assign(s,createRun(true));emit(s,'key');}
 }
 function damage(s,source){
   const p=s.p;
-  if(p.flash>0 || p.shield>0)return;
-  if(--p.hp<=0){fail(s,'damage');return;}
+  if(s.mode!=='play' || p.flash>0 || p.shield>0)return;
+  p.hp=Math.max(0,p.hp-1);
+  if(p.hp===0){fail(s,'damage');return;}
   p.flash=1.30;p.vy=-300;p.vx=p.x+p.w/2 < source ? -285 : 285;p.grounded=false;p.ride=-1;
   emit(s,'hurt');particles(s,p.x+14,p.y+22,'#ff7285',8);
 }

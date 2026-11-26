@@ -131,6 +131,73 @@ try {
     await context.close();
   }
   {
+    const { context, page } = await setUp({ viewport:{ width:1440, height:1040 } });
+    const rows = page.locator('[data-game-board] .lb-row:not(.lb-personal)');
+    await page.locator('[data-game-board] .empty', { hasText:'还没有成绩' }).waitFor();
+    await page.locator(action('play')).click();
+    await mode(page, 'play');
+    assert.equal(await page.locator(value('health')).getAttribute('aria-label'), '生命 3 / 3');
+    for (const [index, key] of ['Enter', 'Space'].entries()) {
+      const score = 725+index*100;
+      await page.evaluate(async score => {
+        const { confirm, step } = await import('/assets/game-core.js');
+        const s = window.__gameQA.current;
+        s.count = s.level.required;
+        s.p.x = s.level.end;
+        step(s);
+        if (s.mode !== 'clear') throw Error('Expected a chapter-one checkpoint');
+        confirm(s);
+        s.score = score;
+      }, score);
+      await page.locator(value('chapter'), { hasText:'02 / 06' }).waitFor();
+      assert.equal(await page.locator(value('health')).getAttribute('aria-label'), '生命 3 / 3');
+      const hitEnemy = hp => page.evaluate(hp => {
+        const s = window.__gameQA.current;
+        const floor = s.level.solids[0].y;
+        const foe = s.enemies.find(e => e.kind === 'bug');
+        if (!foe) throw Error('Expected an enemy for the contact fixture');
+        if (!hp) s.duration = 17;
+        Object.assign(s.p, { x:82, y:floor-s.p.h, vx:0, vy:0, flash:0, shield:0, buffer:0, coyote:0 });
+        Object.assign(foe, { home:s.p.x+8, base:floor, range:0, y:floor-foe.h, dead:false });
+      }, hp);
+      for (const hp of [2,1,0]) {
+        if (!hp) await page.keyboard.down(key);
+        await hitEnemy(hp);
+        await page.waitForFunction(hp => window.__gameQA.current.p.hp === hp, hp);
+        if (hp) await mode(page, 'play');
+      }
+      await mode(page, 'lost');
+      assert.equal(await page.locator(value('title')).textContent(), '本局结算');
+      assert.equal(await page.locator(value('health')).textContent(), '♡♡♡');
+      assert.match(await page.locator(value('copy')).textContent(), new RegExp(`三颗心已耗尽。抵达第 2 章「打印室危机」，成绩 ${score} 分，用时 00:17。`));
+      assert.equal(await page.locator(value('buttonHint')).textContent(), '再来一局');
+      await rows.filter({hasText:`${score} 分`}).waitFor();
+      assert.match(await rows.filter({hasText:`${score} 分`}).textContent(), /第 2 关/);
+      const frozen = await page.evaluate(() => {
+        const { index, time, duration, result } = window.__gameQA.current;
+        return { index, time, duration, result };
+      });
+      if (shots && index === 0) await page.screenshot({ path:join(shots,'04-desktop-settlement.png') });
+      for (let i=0;i<6;i++) { await page.keyboard.down(key); await wait(55); }
+      await page.keyboard.up(key);
+      // Assert after releasing, too: a focused HTML button can activate on Space keyup.
+      await wait(120);
+      assert.equal(await page.locator(cabinet).getAttribute('data-game-mode'), 'lost');
+      assert.deepEqual(await page.evaluate(() => {
+        const { index, time, duration, result } = window.__gameQA.current;
+        return { index, time, duration, result };
+      }), frozen);
+      assert.equal(await rows.count(), index+1);
+      await page.locator(action('play')).click();
+      await mode(page, 'play');
+      assert.equal(await page.locator(value('chapter')).textContent(), '01 / 06');
+      assert.equal(await page.locator(value('health')).getAttribute('aria-label'), '生命 3 / 3');
+      assert.equal(await page.locator(value('score')).textContent(), '0');
+    }
+    console.log('Settlement: three enemy hits end each run; score posts once, Enter and Space hold/release cannot restart, and replay starts at chapter one with three hearts.');
+    await context.close();
+  }
+  {
     const { context, page } = await setUp({ viewport:{ width:390, height:844 }, isMobile:true, hasTouch:true, deviceScaleFactor:2 });
     await page.locator(action('play')).tap();
     await mode(page, 'play');

@@ -21,7 +21,7 @@ export const levels = [
     blocks:[block(252,326,'usb'),block(1090,327,'coffee'),block(2410,326,'stapler')],
     pages:[row(160,431,4,46),row(390,345,3),row(525,411,4,90,35),row(922,335,3),row(1060,431,4),row(1250,413,4,92,38),row(1665,345,3),row(1872,272,3),row(2000,406,4,49,52),row(2272,343,3),row(2440,433,2)],
     enemies:[foe('bug',410),foe('bug',1065),foe('bug',1660),foe('bug',2345)],traps:[trap('jam',958,46,.55),trap('jam',1170,44,1.6),trap('jam',1920,44,2.2),trap('spill',2182,43)], signs:[[446,'移动平台 · 等它靠近'],[855,'留意闪烁的卡纸灯']]}),
-  stage({name:'装订区迷宫',area:'装订作业间',chapter:'技术响应',note:'碎纸机碰到即重试；沿两层机器跳台前进，上层更容易攒够资质页码。', floor:'bind',time:115,required:8,bonus:15,width:2800,end:2640,
+  stage({name:'装订区迷宫',area:'装订作业间',chapter:'技术响应',note:'碰到碎纸机立即结算；沿两层机器跳台前进，上层更容易攒够资质页码。', floor:'bind',time:115,required:8,bonus:15,width:2800,end:2640,
     ground:[[0,850],[961,1572],[1690,2230],[2338,2800]],
     shelves:[shelf(300,382,152,'bind'),shelf(448,295,142,'cabinet'),shelf(567,379,152,'bind'),shelf(690,291,146,'cabinet'),shelf(780,374,110,'bind'),shelf(912,386,135,'bind'),shelf(1068,307,170,'cabinet'),shelf(1265,374,145,'bind'),shelf(1450,386,108,'bind'),shelf(1580,384,123,'bind'),shelf(1740,382,184,'bind'),shelf(1895,299,143,'cabinet'),shelf(2070,376,127,'bind'),shelf(2360,380,155,'bind')],
     blocks:[block(228,326,'coffee'),block(1190,326,'stapler'),block(2490,326,'usb')],
