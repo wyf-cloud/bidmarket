@@ -35,21 +35,20 @@ export function renderHeader() {
 
 export function taskCard(t) {
   const desc = (t.description || '').replace(/\s+/g, ' ');
-  const short = desc.length > 64 ? desc.slice(0, 64) + '…' : desc;
+  const short = desc.length > 58 ? desc.slice(0, 58) + '…' : desc;
   const owner = t.owner || {};
+  const code = 'BM-' + String(t.id).replace(/-/g, '').slice(0, 6).toUpperCase();
   return `<a class="card" href="#/task/${esc(t.id)}">
     <div class="task-top">
-      <span class="chip">${esc(t.category)}</span>
+      <span class="code">${esc(code)}</span>
       <span class="chip status-${esc(t.status)}">${esc(TASK_STATUS_LABEL[t.status] || t.status)}</span>
     </div>
     <h3>${esc(t.title)}</h3>
-    <p class="muted small">${esc(short)}</p>
+    <p class="muted small">${esc(t.category)} · ${esc(short)}</p>
     <div class="task-foot">
       <strong>${budgetText(t)}</strong>
-      <span class="muted">截止 ${dateText(t.deadline)}</span>
-      <span class="muted owner-line">${esc(owner.nickname || '匿名')}
-        ${owner.verified ? ' · 认证' : ''}
-        ${owner.rating ? ` · ${Number(owner.rating).toFixed(1)}` : ''}</span>
+      <span>截止 ${dateText(t.deadline)}</span>
+      <span class="owner-line">${esc(owner.nickname || '匿名')}${owner.verified ? ' · 认证' : ''}</span>
     </div>
   </a>`;
 }

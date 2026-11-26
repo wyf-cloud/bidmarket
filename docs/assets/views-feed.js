@@ -37,13 +37,33 @@ export async function viewHome() {
 
   app().innerHTML = `
     <section class="hero">
-      <p class="eyebrow">标书 · 报价 · 撮合</p>
-      <h1>把标书任务发出来，<br>让会做的人<em>直接报价</em>。</h1>
-      <p class="lead">工程、货物、服务类标书与报价文件，发布需求后由服务方报价，
-      你挑一个开始合作。账号密码注册，不需要手机验证码。</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#/publish">发布任务</a>
-        <a class="btn btn-ghost" href="#/tasks">去接单</a>
+      <div class="hero-copy">
+        <p class="eyebrow">标书代写 · 报价撮合</p>
+        <h1>把标书任务发出来，<br>让会做的人<em>直接报价</em>。</h1>
+        <p class="lead">工程、货物、服务类标书与报价文件，发布需求后由服务方报价，
+        你挑一个开始合作。账号密码注册，不需要手机验证码。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#/publish">发布任务</a>
+          <a class="btn btn-ghost" href="#/tasks">去接单</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <article class="doc">
+          <div class="doc-head">
+            <span class="doc-code">BM-2026-0142</span>
+            <span class="doc-tag">投标文件</span>
+          </div>
+          <h2 class="doc-title">某市政道路改造工程</h2>
+          <p class="doc-sub">商务标 · 技术标 · 一正两副</p>
+          <div class="doc-rows">
+            <div><span>投标人</span><b>宏远建设有限公司</b></div>
+            <div><span>项目编号</span><b>SZ-2026-1103</b></div>
+            <div><span>投标日期</span><b>2026-11-30</b></div>
+          </div>
+          <div class="doc-price"><span>投标报价</span><b>¥ 3,286,400</b></div>
+          <div class="doc-seal">标书报价<br>专用章</div>
+          <div class="doc-foot">样张展示 · 非真实项目</div>
+        </article>
       </div>
     </section>
 
