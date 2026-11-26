@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="./assets/style.css">
 </head>
 <body>
+  <div id="intro" class="intro" aria-hidden="true"><canvas></canvas></div>
+
   <header class="topbar">
     <div class="wrap topbar-inner">
       <a class="brand" href="#/">
@@ -84,5 +86,12 @@
     })();
   </script>
   <script type="module" src="./assets/app.js"></script>
+  <script>
+    // 兜底：模块加载失败时也别把进站遮罩留在页面上
+    setTimeout(function () {
+      var el = document.getElementById('intro');
+      if (el) el.remove();
+    }, 4000);
+  </script>
 </body>
 </html>
