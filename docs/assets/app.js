@@ -8,7 +8,8 @@ import { DEMO, demoApi } from './demo.js';
 import { renderHeader, refreshTicker } from './ui.js';
 import { viewHome, viewTasks, viewTask, viewPublish, viewEdit, leaveTask } from './views-feed.js';
 import { viewLogin, viewRegister, viewReset, viewMe, viewSettings, viewNotifications } from './views-auth.js';
-import { viewAdmin, viewHow, viewNotFound } from './views-admin.js';
+import { viewAdmin, viewNotFound } from './views-admin.js';
+import { viewHow } from './views-how.js';
 import { viewHealth } from './views-health.js';
 import { viewTerms, viewPrivacy } from './views-legal.js';
 
