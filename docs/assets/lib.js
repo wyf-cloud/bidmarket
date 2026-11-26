@@ -34,7 +34,10 @@ export const state = {
   bellChannel: null
 };
 
-export const CATEGORIES = ['工程类标书', '货物类标书', '服务类标书', '资格预审', '电子标上传', '其他'];
+export const CATEGORIES = [
+  '工程类标书', '货物类标书', '服务类标书',
+  '成套报价', '资格预审', '电子标上传', '其他'
+];
 
 export const TASK_STATUS = {
   pending: '待审核', open: '招募中', matched: '已选定', in_progress: '进行中',

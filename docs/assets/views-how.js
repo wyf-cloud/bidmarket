@@ -30,7 +30,7 @@ export function viewHow() {
     <section class="section how">
       <div class="section-head">
         <h2>怎么用</h2>
-        <span class="muted">三种身份，三条路径</span>
+        <span class="muted">标书 / 成套报价 / 资格预审，同一套流程</span>
       </div>
 
       <div class="how-roles">
@@ -42,8 +42,8 @@ export function viewHow() {
           </div>
 
           ${step('01', '把需求写成文字',
-            '标题写项目名，类型选工程 / 货物 / 服务，预算给个区间，投标截止时间必须填。',
-            '描述里写清册数、评分点、是否要电子标上传——这三项决定报价准不准。',
+            '标题写项目名，类型选工程 / 货物 / 服务 / 成套报价，预算给个区间，投标截止时间必须填。',
+            '标书写清册数、评分点；成套报价写清清单项数、品牌型号要求和交货期——这三项决定报价准不准。',
             shot('bidmarket / 发布任务', `
               <div class="sk-field"><span>任务标题</span><b>某市政道路改造工程投标文件</b></div>
               <div class="sk-row">

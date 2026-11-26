@@ -603,13 +603,13 @@ async function renderTaskForm(t) {
   app().innerHTML = `
     <div class="panel">
       <h2>${isEdit ? '编辑任务' : '发布任务'}</h2>
-      <p class="sub">写清需求，服务方才能报出准确价格。</p>
+      <p class="sub">标书编制、成套报价、资格预审都可以发布，写清需求服务方才能报准价。</p>
       <form id="task-form">
         <div class="field"><label>任务标题</label>
           <input name="title" required maxlength="80" value="${isEdit ? esc(t.title) : ''}"
-                 placeholder="例如：某市政道路工程投标文件编制"></div>
+                 placeholder="例如：某市政道路工程投标文件编制 / 某项目成套设备报价"></div>
         <div class="row">
-          <div class="field"><label>标书类型</label>
+          <div class="field"><label>任务类型</label>
             <select name="category" required>
               ${CATEGORIES.map(c => `<option value="${esc(c)}"${isEdit && t.category === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}
             </select></div>
@@ -623,8 +623,8 @@ async function renderTaskForm(t) {
             <input name="budget_max" type="number" min="0" step="100" value="${isEdit && t.budget_max != null ? t.budget_max : ''}"></div>
         </div>
         <div class="field"><label>需求说明</label>
-          <textarea name="description" required placeholder="项目概况、标书册数、是否含电子标上传、期望交付时间…">${isEdit ? esc(t.description) : ''}</textarea>
-          <div class="hint">平台不接收招标文件。请用文字写清评分点、册数和截止时间；涉密资料在选定服务方后再沟通。</div></div>
+          <textarea name="description" required placeholder="标书：项目概况、册数、评分点；报价：清单项数、品牌型号要求、是否含税运…">${isEdit ? esc(t.description) : ''}</textarea>
+          <div class="hint">平台不接收文件。标书类写清评分点与册数；成套报价写清清单范围、品牌限制和交货期。</div></div>
         <button class="btn btn-primary" type="submit">${isEdit ? '保存修改' : '发布'}</button>
         ${isEdit ? `<a class="btn btn-ghost" href="#/task/${esc(t.id)}">取消</a>` : ''}
       </form>
