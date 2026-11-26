@@ -82,7 +82,7 @@ const bids = [
 const messages = [
   { id: 'm1', task_id: 't4', sender_id: 'u1', body: '李工你好，食堂这边的评分点主要看服务方案和人员配置，麻烦重点写。', created_at: minsAgo(60 * 22) },
   { id: 'm2', task_id: 't4', sender_id: 'u2', body: '收到，我先出人员配置表和服务流程，今晚给你初稿。', created_at: minsAgo(60 * 21) },
-  { id: 'm3', task_id: 't4', sender_id: 'u2', body: '初稿已经放进交付文件了，麻烦看下第三章的食安承诺。', created_at: minsAgo(40) }
+  { id: 'm3', task_id: 't4', sender_id: 'u2', body: '初稿已经发你微信了，麻烦看下第三章的食安承诺。', created_at: minsAgo(40) }
 ];
 
 const reviews = [
@@ -98,7 +98,7 @@ const files = [
 const notifications = [
   { id: 'n1', user_id: 'u1', kind: 'bid', task_id: 't1', body: '李工 对「市政道路工程投标文件编制」报价 ¥3,200', read_at: null, created_at: minsAgo(120) },
   { id: 'n2', user_id: 'u1', kind: 'bid', task_id: 't1', body: '王工 对「市政道路工程投标文件编制」报价 ¥3,600', read_at: null, created_at: minsAgo(90) },
-  { id: 'n3', user_id: 'u1', kind: 'message', task_id: 't4', body: '李工：初稿已经放进交付文件了，麻烦看下第三章的食安承诺。', read_at: null, created_at: minsAgo(40) }
+  { id: 'n3', user_id: 'u1', kind: 'message', task_id: 't4', body: '李工：初稿已经发你微信了，麻烦看下第三章的食安承诺。', read_at: null, created_at: minsAgo(40) }
 ];
 
 const reports = [

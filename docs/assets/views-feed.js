@@ -4,11 +4,10 @@
 import {
   db, state, CATEGORIES, TASK_STATUS, BID_STATUS, STATUS_HINT,
   esc, money, budgetText, dateText, timeText, sizeText, stars,
-  toast, zhError, currentUid, needLogin, uploadAttachment, deleteAttachment, go
+  toast, zhError, currentUid, needLogin, go
 } from './lib.js';
 import {
-  taskCard, empty, openDialog, reportDialog, fileList, uploadZone,
-  bindDownloads, renderHeader, closeDialog
+  taskCard, empty, openDialog, reportDialog, closeDialog
 } from './ui.js';
 import { CONTENT } from './content.js';
 
@@ -220,11 +219,6 @@ export async function viewTask(id) {
   const participant = isOwner || !!myBid;
   const isProvider = !!(myBid && myBid.status === 'accepted');
 
-  const { data: files } = await db.from('files')
-    .select('*').eq('task_id', id).eq('kind', 'deliverable').order('created_at');
-  const allFiles = files || [];
-  const deliverables = allFiles;
-
   let msgs = [];
   let reviews = [];
   if (participant) {
@@ -261,7 +255,6 @@ export async function viewTask(id) {
 
     ${isOwner ? ownerBlock(t, bids) : bidderBlock(t, myBid, canBid)}
     ${statusPanel(t, { isOwner, isProvider })}
-    ${deliverableBlock(t, deliverableSides(t, isOwner, isProvider), deliverables)}
     ${participant ? messagePanel(msgs) : ''}
     ${t.status === 'completed' && participant ? reviewPanel(reviews, uid) : ''}
 
@@ -271,12 +264,8 @@ export async function viewTask(id) {
     </div>
   `;
 
-  bindTask(t, { uid, isOwner, isProvider, participant, bids, myBid, files: allFiles, reviews });
+  bindTask(t, { uid, isOwner, isProvider, participant, bids, myBid, reviews });
   subscribeTask(t.id, participant);
-}
-
-function deliverableSides(t, isOwner, isProvider) {
-  return (isOwner || isProvider) && ['matched', 'delivered', 'completed'].includes(t.status);
 }
 
 /* ---------- 报价区 ---------- */
@@ -363,18 +352,6 @@ function statusPanel(t, c) {
   return `<div class="panel"><h2>任务操作</h2>
     <p class="sub">${esc(STATUS_HINT[t.status] || '')}</p>
     <div class="actions">${acts.join('')}</div></div>`;
-}
-
-function deliverableBlock(t, show, deliverables) {
-  if (!show) return '';
-  const canUpload = !!currentUid() && ['matched', 'delivered'].includes(t.status);
-  const canDelete = deliverables.some(f => f.uploader_id === currentUid());
-  return `<div class="panel">
-    <h2>交付文件</h2>
-    <p class="sub">中标方上传成稿，发布方下载验收。单个文件不超过 20MB。</p>
-    ${fileList(deliverables, { canDelete })}
-    ${canUpload ? `<div style="margin-top:12px">${uploadZone(t.id, 'deliverable', '上传交付文件')}</div>` : ''}
-  </div>`;
 }
 
 function messagePanel(msgs) {
@@ -490,41 +467,6 @@ function bindTask(t, ctx) {
       toast('已更新');
       await viewTask(t.id);
     };
-  });
-
-  // 附件上传
-  const uploads = document.querySelectorAll('[data-upload]');
-  uploads.forEach(input => {
-    input.onchange = async () => {
-      const files = Array.from(input.files || []);
-      if (!files.length) return;
-      const kind = input.dataset.kind || 'task';
-      const label = input.closest('.upload-zone').querySelector('span');
-      const old = label.textContent;
-      label.textContent = '上传中…';
-      try {
-        for (const file of files) await uploadAttachment(t.id, file, kind);
-        toast('上传完成');
-        await viewTask(t.id);
-      } catch (e) {
-        label.textContent = old;
-        toast(zhError(e.message || e), 'error');
-      }
-    };
-  });
-
-  // 附件删除
-  bindDownloads(document, async (fileId) => {
-    const f = ctx.files.find(x => x.id === fileId);
-    if (!f) return;
-    if (!confirm('删除这个附件？')) return;
-    try {
-      await deleteAttachment(f);
-      toast('已删除');
-      await viewTask(t.id);
-    } catch (e) {
-      toast(zhError(e.message || e), 'error');
-    }
   });
 
   // 消息

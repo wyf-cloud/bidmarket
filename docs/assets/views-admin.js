@@ -68,7 +68,7 @@ async function renderOverview(body) {
       <ul class="muted small" style="line-height:1.9;margin:0;padding-left:18px">
         <li>认证用户会在昵称旁显示“已认证”，建议只给核验过营业执照的服务方认证。</li>
         <li>举报处理：任务类可下架，用户类可封禁；封禁后无法发任务、报价、发消息。</li>
-        <li>附件存放在私有存储桶，链接是 1 小时有效的签名地址，不会公开外泄。</li>
+        <li>平台不接收文件，任务和沟通全部是文字，涉密资料由双方线下传递。</li>
       </ul>
     </div>`;
 }
@@ -136,7 +136,7 @@ async function renderTasks(body) {
 
   body.innerHTML = `<div class="panel">
     <h2>任务（${tasks.length}）</h2>
-    <p class="sub">下架会删除任务及其报价、消息、评价和附件记录，不可恢复。</p>
+    <p class="sub">下架会删除任务及其报价、消息和评价，不可恢复。</p>
     <table class="admin-table">
       <thead><tr><th>标题</th><th>发布者</th><th>状态</th><th>发布时间</th><th></th></tr></thead>
       <tbody>${tasks.map(t => `<tr>
@@ -211,7 +211,7 @@ export function viewHow() {
         <div class="step"><b>服务方</b><h4>提交报价</h4>
           <p>挑任务，填金额、工期和方案。每个任务只能报一次，选定前可撤回。</p></div>
         <div class="step"><b>双方</b><h4>沟通与交付</h4>
-          <p>选定后用站内消息沟通，中标方上传交付文件，发布方确认完成后互评。</p></div>
+          <p>选定后用站内消息沟通，中标方线下交付，发布方确认完成后互评。</p></div>
       </div>
 
       <div class="panel" style="margin-top:28px">
@@ -219,7 +219,7 @@ export function viewHow() {
         <p class="muted">当前版本免费发布、免费报价，不抽佣，也不托管资金。平台只提供信息展示与撮合，
         不参与合同签订与履约。</p>
         <p class="muted">标书涉及商业信息，请勿在公开的任务描述里填写投标报价、客户名称等敏感内容；
-        涉密材料建议选定服务方后通过站内消息交换，或使用附件（链接为 1 小时有效的签名地址）。</p>
+        涉密材料建议在选定服务方后通过站内消息约定线下传递方式。</p>
         <p class="muted small">遇到虚假信息、诈骗或骚扰，可以在任务页举报，管理员会处理。</p>
       </div>
     </section>`;

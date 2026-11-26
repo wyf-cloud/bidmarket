@@ -31,7 +31,8 @@ const REPO = argOf('repo', 'bidmarket');
 const OWNER = argOf('owner', '');
 const PRIVATE = flag('private');
 let branch = 'main';
-const SKIP = new Set(['.git', 'node_modules', '.DS_Store', 'Thumbs.db']);
+// .github 需要 token 具备 workflow 权限，默认跳过
+const SKIP = new Set(['.git', '.github', 'node_modules', '.DS_Store', 'Thumbs.db']);
 
 if (!TOKEN) {
   console.error('缺少 --token（GitHub Personal Access Token）');
@@ -40,7 +41,7 @@ if (!TOKEN) {
 
 const API = 'https://api.github.com';
 
-async function gh(path, { method = 'GET', body } = {}) {
+async function gh(path, { method = 'GET', body } = {}, attempt = 0) {
   const res = await fetch(API + path, {
     method,
     headers: {
@@ -57,6 +58,11 @@ async function gh(path, { method = 'GET', body } = {}) {
   try { json = text ? JSON.parse(text) : null; } catch { json = { raw: text }; }
   if (!res.ok) {
     const msg = (json && (json.message || json.error)) || text.slice(0, 200);
+    if (res.status === 403 && /secondary rate limit/i.test(msg) && attempt < 6) {
+      console.log(`    触发 GitHub 限流，60 秒后重试（第 ${attempt + 1} 次）…`);
+      await new Promise(r => setTimeout(r, 60000));
+      return gh(path, { method, body }, attempt + 1);
+    }
     const err = new Error(`GitHub API ${method} ${path} -> ${res.status} ${msg}`);
     err.status = res.status;
     err.json = json;
@@ -87,20 +93,23 @@ async function main() {
   const owner = OWNER || me.login;
   console.log(`    账号：${me.login}` + (owner !== me.login ? `（目标 owner：${owner}）` : ''));
 
-  console.log(`2/6 创建仓库 ${owner}/${REPO}…`);
+  console.log(`2/6 检查仓库 ${owner}/${REPO}…`);
   let repo;
   try {
-    repo = await gh('/user/repos', {
-      method: 'POST',
-      body: { name: REPO, private: PRIVATE, auto_init: false, description: '标书报价 · 任务撮合平台' }
-    });
-    console.log('    已创建');
+    repo = await gh(`/repos/${owner}/${REPO}`);
+    console.log('    已存在，跳过创建');
   } catch (e) {
-    if (e.status === 422) {
+    if (e.status !== 404) throw e;
+    try {
+      repo = await gh('/user/repos', {
+        method: 'POST',
+        body: { name: REPO, private: PRIVATE, auto_init: false, description: '标书报价 · 任务撮合平台' }
+      });
+      console.log('    已创建');
+    } catch (e2) {
+      if (e2.status !== 422) throw e2;
       repo = await gh(`/repos/${owner}/${REPO}`);
       console.log('    仓库已存在，继续上传');
-    } else {
-      throw e;
     }
   }
 
