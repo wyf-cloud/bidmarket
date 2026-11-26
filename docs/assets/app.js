@@ -10,6 +10,7 @@ import { viewHome, viewTasks, viewTask, viewPublish, viewEdit, leaveTask } from 
 import { viewLogin, viewRegister, viewReset, viewMe, viewSettings, viewNotifications } from './views-auth.js';
 import { viewAdmin, viewHow, viewNotFound } from './views-admin.js';
 import { viewHealth } from './views-health.js';
+import { viewTerms, viewPrivacy } from './views-legal.js';
 
 const app = () => document.getElementById('app');
 
@@ -43,6 +44,8 @@ async function render() {
     else if (page === 'notifications') await viewNotifications();
     else if (page === 'admin') await viewAdmin();
     else if (page === 'health') await viewHealth();
+    else if (page === 'terms') viewTerms();
+    else if (page === 'privacy') viewPrivacy();
     else if (page === 'setup') renderSetup();
     else if (page === 'how') viewHow();
     else viewNotFound();

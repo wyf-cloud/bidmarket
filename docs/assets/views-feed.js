@@ -10,6 +10,7 @@ import {
   taskCard, empty, openDialog, reportDialog, fileList, uploadZone,
   bindDownloads, renderHeader, closeDialog
 } from './ui.js';
+import { CONTENT } from './content.js';
 
 const PAGE_SIZE = 10;
 
@@ -24,6 +25,15 @@ export async function viewHome() {
     .limit(6);
 
   const list = data || [];
+  const c = CONTENT.contact;
+
+  const contactHtml = (c.phone || c.wechat)
+    ? `<div class="contact-lines">
+         ${c.phone ? `<a class="contact-item" href="tel:${esc(c.phone)}"><b>电话</b>${esc(c.phone)}</a>` : ''}
+         ${c.wechat ? `<span class="contact-item"><b>微信</b>${esc(c.wechat)}</span>` : ''}
+         <span class="muted small">服务时间 ${esc(c.hours)}</span>
+       </div>`
+    : `<p class="muted">${esc(c.note)}</p>`;
 
   app().innerHTML = `
     <section class="hero">
@@ -35,10 +45,64 @@ export async function viewHome() {
         <a class="btn btn-primary" href="#/publish">发布任务</a>
         <a class="btn btn-ghost" href="#/tasks">去接单</a>
       </div>
-      <div class="steps">
-        <div class="step"><b>01</b><h4>发布需求</h4><p>写清项目类型、预算和截止时间</p></div>
-        <div class="step"><b>02</b><h4>收到报价</h4><p>服务方提交金额、工期和方案</p></div>
-        <div class="step"><b>03</b><h4>选定开工</h4><p>站内沟通、交付、互评</p></div>
+    </section>
+
+    <section class="section" id="services">
+      <div class="section-head"><h2>服务范围</h2><span class="muted small">把需求写清楚，报价会准很多</span></div>
+      <div class="svc-grid">
+        ${CONTENT.services.map(s => `<div class="svc">
+          <span class="svc-mark">${esc(s.mark)}</span>
+          <h3>${esc(s.name)}</h3>
+          <p>${esc(s.desc)}</p>
+        </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="section" id="pricing">
+      <div class="section-head"><h2>报价参考</h2><span class="muted small">仅供参考，以实际报价为准</span></div>
+      <div class="panel">
+        <table class="price-table">
+          <thead><tr><th>类型</th><th>参考价</th><th>交付周期</th></tr></thead>
+          <tbody>
+            ${CONTENT.pricing.map(p => `<tr>
+              <td>${esc(p.type)}</td>
+              <td class="price">${esc(p.price)}</td>
+              <td class="muted">${esc(p.eta)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <p class="muted small" style="margin:16px 0 0">${esc(CONTENT.pricingNote)}</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>怎么走</h2></div>
+      <div class="steps" style="margin-top:0">
+        ${CONTENT.flow.map(f => `<div class="step">
+          <b>${esc(f.step)}</b><h4>${esc(f.h)}</h4><p>${esc(f.p)}</p>
+        </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="section" id="cases">
+      <div class="section-head"><h2>交付案例</h2><span class="muted small">已脱敏</span></div>
+      <div class="case-grid">
+        ${CONTENT.cases.map(k => `<div class="case">
+          <span class="chip">${esc(k.tag)}</span>
+          <h3>${esc(k.title)}</h3>
+          <p>${esc(k.desc)}</p>
+          <div class="case-meta">${esc(k.meta)}</div>
+        </div>`).join('')}
+      </div>
+      <p class="muted small" style="margin-top:14px">${esc(CONTENT.casesNote)}</p>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>三条承诺</h2></div>
+      <div class="guarantee-grid">
+        ${CONTENT.guarantees.map(g => `<div class="guarantee">
+          <h3>${esc(g.title)}</h3><p>${esc(g.desc)}</p>
+        </div>`).join('')}
       </div>
     </section>
 
@@ -49,7 +113,30 @@ export async function viewHome() {
       </div>
       ${list.length
         ? `<div class="task-grid">${list.map(taskCard).join('')}</div>`
-        : empty('还没有任务，成为第一个发布的人。')}
+        : empty('还没有任务，成为第一个发布的人。', '<a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>')}
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>常见问题</h2></div>
+      <div class="faq">
+        ${CONTENT.faq.map(f => `<details>
+          <summary>${esc(f.q)}</summary>
+          <p>${esc(f.a)}</p>
+        </details>`).join('')}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="contact-box">
+        <div>
+          <h2>需要报价？</h2>
+          <p class="muted">${esc(CONTENT.contact.note)}</p>
+        </div>
+        <div class="contact-right">
+          ${contactHtml}
+          <a class="btn btn-primary" href="#/publish">发布任务</a>
+        </div>
+      </div>
     </section>`;
 }
 
