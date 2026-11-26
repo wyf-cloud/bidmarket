@@ -843,13 +843,3 @@ input[type="checkbox"], input[type="radio"] {
 @media (max-width: 760px) {
   .filters { grid-template-columns: 1fr; }
 }
-
-/* ---------- 进站动画 ---------- */
-.intro {
-  position: fixed; inset: 0; z-index: 9999;
-  background: #14110e;
-  display: grid; place-items: center;
-  transition: opacity .5s var(--ease);
-}
-.intro.hide { opacity: 0; pointer-events: none; }
-.intro canvas { display: block; }

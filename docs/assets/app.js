@@ -10,7 +10,6 @@ import { viewHome, viewTask, viewPublish, viewEdit, leaveTask } from './views-fe
 import { viewLogin, viewRegister, viewReset, viewMe, viewSettings, viewNotifications } from './views-auth.js';
 import { viewAdmin, viewNotFound } from './views-admin.js';
 import { viewHow } from './views-how.js';
-import { playIntro } from './intro.js';
 import { viewHealth } from './views-health.js';
 import { viewTerms, viewPrivacy } from './views-legal.js';
 
@@ -142,8 +141,6 @@ function renderSetup() {
 
 /* ---------- 启动 ---------- */
 async function boot() {
-  playIntro();
-
   if (!db) { renderSetup(); return; }
 
   renderDemoBar();
