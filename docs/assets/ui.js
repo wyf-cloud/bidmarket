@@ -131,8 +131,18 @@ export async function refreshTicker() {
     const dur = Math.min(180, Math.max(10, Number(data.announcement_speed) || 40));
     el.hidden = false;
     el.innerHTML = `<div class="ticker-track" style="--dur:${dur}s">
-      <span>${esc(text)}</span><span aria-hidden="true">${esc(text)}</span>
+      <span></span><span aria-hidden="true"></span>
     </div>`;
+
+    // 短文案要重复到铺满一屏，否则右侧会留白、看起来像停住
+    const track = el.querySelector('.ticker-track');
+    const first = track.children[0];
+    first.textContent = text;
+    const unitW = first.scrollWidth || 1;
+    const need = Math.max(1, Math.ceil((window.innerWidth * 1.2) / unitW));
+    const full = need > 1 ? new Array(need).fill(text).join('　·　') : text;
+    first.textContent = full;
+    track.children[1].textContent = full;
   } catch {
     el.hidden = true;
   }
