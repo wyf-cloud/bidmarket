@@ -12,7 +12,7 @@ import { viewAdmin, viewNotFound } from './views-admin.js';
 import { viewHow } from './views-how.js';
 import { viewHealth } from './views-health.js';
 import { viewTerms, viewPrivacy } from './views-legal.js';
-import { viewGame } from './views-game.js';
+import { viewGame, leaveGame } from './views-game.js';
 
 const app = () => document.getElementById('app');
 
@@ -26,6 +26,7 @@ function routeInfo() {
 
 async function render() {
   leaveTask();
+  leaveGame();
   if (!db) { renderSetup(); return; }
 
   const { page, param, param2 } = routeInfo();

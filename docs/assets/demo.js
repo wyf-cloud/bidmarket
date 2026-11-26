@@ -108,7 +108,7 @@ const reports = [
 /* ---------- 内存 store ---------- */
 const store = {
   profiles, profile_contacts: contacts, tasks, bids, messages,
-  reviews, files, notifications, reports
+  reviews, files, notifications, reports, game_scores: []
 };
 
 let currentUserId = 'u1';
@@ -138,6 +138,10 @@ function decorate(table, row, cols) {
   }
   if (table === 'profiles' && /contacts\s*:/.test(cols)) {
     out.contacts = contacts.find(c => c.user_id === row.id) || null;
+  }
+  if (table === 'game_scores' && /user\s*:/.test(cols)) {
+    const profile = profiles.find(p => p.id === row.user_id);
+    out.user = profile ? { nickname: profile.nickname } : null;
   }
   return out;
 }
