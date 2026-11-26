@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>标书报价 · 发任务 / 接单</title>
+  <meta name="description" content="发布标书编制、报价文件、资格预审任务，或接单报价。账号密码直接注册，无需手机验证码。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314181f'/%3E%3Crect x='9' y='9' width='14' height='14' rx='3' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#/">
+        <span class="brand-mark">标</span>
+        <span>标书报价</span>
+      </a>
+      <nav class="nav">
+        <a href="#/tasks">任务大厅</a>
+        <a href="#/how">怎么用</a>
+      </nav>
+      <div class="auth-slot" id="auth-slot"></div>
+    </div>
+  </header>
+
+  <main id="app" class="wrap"></main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p>标书报价 · 任务撮合平台</p>
+      <p class="muted small">平台仅提供信息发布与撮合，不替代法定招标投标程序。交易前请自行核验对方资质。</p>
+      <p class="small"><a href="#/health">环境自检</a> · <a href="#/how">使用说明</a></p>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="./assets/config.js"></script>
+  <script>
+    // 两种常见“白屏”的兜底提示：file:// 直接打开、CDN 拉不到
+    (function () {
+      function fill(html) {
+        var app = document.getElementById('app');
+        if (app && !app.children.length) app.innerHTML = html;
+      }
+
+      if (location.protocol === 'file:') {
+        window.addEventListener('load', function () {
+          setTimeout(function () {
+            fill(
+              '<div class="panel"><h2>需要用本地服务器打开</h2>' +
+              '<p class="sub">直接双击 HTML 时，浏览器会因为安全策略拦掉 ES 模块，所以页面是空的。</p>' +
+              '<ol class="muted" style="line-height:2">' +
+              '<li>在本目录执行 <code>python -m http.server 8000</code></li>' +
+              '<li>浏览器打开 <code>http://localhost:8000/</code></li>' +
+              '<li>或者直接双击本目录里的 <code>start.bat</code></li>' +
+              '</ol>' +
+              '<p class="muted small">部署到 GitHub Pages / Cloudflare Pages 后不存在这个问题。</p></div>'
+            );
+          }, 500);
+        });
+        return;
+      }
+
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          fill(
+            '<div class="panel"><h2>页面脚本没有加载成功</h2>' +
+            '<p class="sub">最常见的原因是 <code>cdn.jsdelivr.net</code> 在当前网络下被拦截——' +
+            'app.js 需要从它加载 Supabase SDK。</p>' +
+            '<ol class="muted" style="line-height:2">' +
+            '<li>把 <code>assets/lib.js</code> 第一行的 CDN 换成 <code>https://esm.sh/@supabase/supabase-js@2</code></li>' +
+            '<li>或者部署到线上再访问，用域名直连通常更稳</li>' +
+            '<li>按 F12 看 Console，若报 CORS / Failed to fetch 就是这个问题</li>' +
+            '</ol></div>'
+          );
+        }, 6000);
+      });
+    })();
+  </script>
+  <script type="module" src="./assets/app.js"></script>
+</body>
+</html>
