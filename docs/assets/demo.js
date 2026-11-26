@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    演示客户端：没有配置 Supabase 时接管 db，用内存假数据跑通全部界面
    只用于预览，数据刷新即重置，不会写入任何服务器
    ============================================================ */
@@ -12,17 +12,17 @@ const minsAgo = (n) => new Date(Date.now() - n * MIN).toISOString();
 /* ---------- 种子数据 ---------- */
 const profiles = [
   {
-    id: 'u1', nickname: '张工', email: 'zhang@bid.local', role: 'client',
+    id: 'u1', nickname: '张工', email: 'zhang@example.com', role: 'client',
     verified: true, rating: 4.8, bio: '市政与房建项目，常年需要标书外包。',
     is_admin: true, banned: false, created_at: minsAgo(60 * 24 * 40)
   },
   {
-    id: 'u2', nickname: '李工', email: 'li@bid.local', role: 'provider',
+    id: 'u2', nickname: '李工', email: 'li@example.com', role: 'provider',
     verified: true, rating: 4.9, bio: '8 年标书编制，擅长工程类商务标、技术标。',
     is_admin: false, banned: false, created_at: minsAgo(60 * 24 * 30)
   },
   {
-    id: 'u3', nickname: '王工', email: 'wang@bid.local', role: 'provider',
+    id: 'u3', nickname: '王工', email: 'wang@example.com', role: 'provider',
     verified: false, rating: 4.5, bio: '货物类、服务类标书，电子标上传。',
     is_admin: false, banned: false, created_at: minsAgo(60 * 24 * 12)
   }
@@ -117,7 +117,7 @@ let authCb = null;
 const sessionFor = (uid) => {
   if (!uid) return null;
   const p = profiles.find(x => x.id === uid);
-  return { user: { id: uid, email: p ? p.email : uid + '@bid.local' } };
+  return { user: { id: uid, email: p ? p.email : uid + '@example.com' } };
 };
 
 /* ---------- 查询构建器 ---------- */

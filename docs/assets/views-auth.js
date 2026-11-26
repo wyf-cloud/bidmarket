@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    页面：注册 / 登录 / 找回密码 / 我的 / 设置 / 通知
    ============================================================ */
 import {
@@ -129,7 +129,7 @@ export function viewReset() {
       <form id="reset-form">
         <div class="field"><label>邮箱</label>
           <input name="email" type="email" required placeholder="you@example.com">
-          <div class="hint">如果注册时填的是手机号（内部邮箱 @bid.local），收不到邮件，
+          <div class="hint">如果注册时填的是手机号（内部邮箱 @example.com），收不到邮件，
             请联系管理员在后台重置。</div></div>
         <button class="btn btn-primary btn-block" type="submit">发送重置邮件</button>
       </form>

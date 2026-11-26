@@ -97,7 +97,7 @@ async function main() {
   // 数据表
   for (const t of TABLES) {
     try {
-      const r = await req(`/rest/v1/${t}?select=id&limit=0`);
+      const r = await req(`/rest/v1/${t}?select=*&limit=0`);
       if (r.status === 404) push(false, '表 ' + t, '不存在（schema.sql 没执行完整）');
       else if (r.status === 401 || r.status === 403) push(false, '表 ' + t, 'HTTP ' + r.status + '：anon key 不对或没有权限');
       else push(r.status < 300, '表 ' + t, 'HTTP ' + r.status);

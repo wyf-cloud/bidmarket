@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    公共库：Supabase 客户端、状态、格式化、提示
    ============================================================ */
 import { createDemoClient, DEMO as IS_DEMO } from './demo.js';
@@ -136,7 +136,7 @@ export function zhError(msg = '') {
 
 export function toEmail(account) {
   const a = String(account).trim();
-  return a.includes('@') ? a : a + '@bid.local';
+  return a.includes('@') ? a : a + '@example.com';
 }
 
 /* ---------- 登录态 ---------- */

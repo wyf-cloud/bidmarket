@@ -1,4 +1,4 @@
-# 标书报价 · 任务撮合平台
+﻿# 标书报价 · 任务撮合平台
 
 无服务器方案：静态前端放 GitHub Pages / Cloudflare Pages，注册、登录、数据库、权限、文件存储、实时消息全部由 Supabase 承担。**没有云服务器，也没有自己的后端代码。**
 
@@ -111,7 +111,7 @@ git -c http.proxy= -c https.proxy= -c http.sslBackend=openssl push -u origin mai
 ```sql
 -- 按邮箱（注册时填的账号）
 update public.profiles set is_admin = true
-where id = (select id from auth.users where email = '你的账号@bid.local');
+where id = (select id from auth.users where email = '你的账号@example.com');
 
 -- 或把最早注册的用户设为管理员
 update public.profiles set is_admin = true
@@ -122,7 +122,7 @@ where id = (select id from auth.users order by created_at limit 1);
 
 ## 账号与密码
 
-账号不是邮箱格式时，会合成内部邮箱 `账号@bid.local` 交给 Supabase Auth。
+账号不是邮箱格式时，会合成内部邮箱 `账号@example.com` 交给 Supabase Auth。
 好处是完全不走短信、注册即用；代价是**收不到重置邮件**。
 
 - 真实邮箱注册：登录页「找回密码」可直接自助重置。
