@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>标书报价 · 发任务 / 接单</title>
-  <meta name="description" content="发布标书编制、报价文件、资格预审任务，或接单报价。账号密码直接注册，无需手机验证码。">
+  <title>公益标书报价接单平台 · 发任务 / 接单</title>
+  <meta name="description" content="公益标书报价接单平台：发布标书编制、报价文件、资格预审任务，或接单报价。账号密码直接注册，无需手机验证码。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314181f'/%3E%3Crect x='9' y='9' width='14' height='14' rx='3' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./assets/style.css">
 </head>
@@ -13,11 +13,14 @@
     <div class="wrap topbar-inner">
       <a class="brand" href="#/">
         <span class="brand-mark">标</span>
-        <span>标书报价</span>
+        <span class="brand-text">
+          <span class="brand-name">公益标书</span>
+          <span class="brand-sub">报价接单平台</span>
+        </span>
       </a>
-      <nav class="nav">
-        <a href="#/tasks">任务大厅</a>
-        <a href="#/how">怎么用</a>
+      <nav class="nav" id="main-nav">
+        <a href="#/tasks" data-nav="tasks">任务大厅</a>
+        <a href="#/how" data-nav="how">怎么用</a>
       </nav>
       <div class="auth-slot" id="auth-slot"></div>
     </div>
@@ -29,7 +32,7 @@
 
   <footer class="footer">
     <div class="wrap">
-      <p>标书报价 · 任务撮合平台</p>
+      <p>公益标书报价接单平台</p>
       <p class="muted small">平台仅提供信息发布与撮合，不替代法定招标投标程序。交易前请自行核验对方资质。</p>
       <p class="small"><a href="#/health">环境自检</a> · <a href="#/how">使用说明</a> · <a href="#/terms">服务协议</a> · <a href="#/privacy">隐私政策</a></p>
     </div>

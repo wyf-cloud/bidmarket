@@ -16,12 +16,18 @@ export function renderHeader() {
 
   slot.innerHTML = state.session
     ? `<a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>
-       <a class="bell" href="#/notifications" title="通知">通知${unread ? `<i>${unread > 99 ? '99+' : unread}</i>` : ''}</a>
-       ${isAdmin ? '<a class="link" href="#/admin">管理</a>' : ''}
+       <a class="top-link" href="#/notifications" data-nav="notifications">通知${unread ? `<i>${unread > 99 ? '99+' : unread}</i>` : ''}</a>
+       ${isAdmin ? '<a class="top-link" href="#/admin" data-nav="admin">管理</a>' : ''}
        <a class="avatar" href="#/me" title="${esc(name)}">${esc(name.slice(0, 1))}</a>
-       <button class="link" id="logout-btn">退出</button>`
-    : `<a class="link" href="#/login">登录</a>
+       <button class="link top-logout" id="logout-btn">退出</button>`
+    : `<a class="top-link" href="#/login" data-nav="login">登录</a>
        <a class="btn btn-primary btn-sm" href="#/register">注册</a>`;
+
+  // 当前页面高亮
+  const page = (location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0]) || 'home';
+  document.querySelectorAll('[data-nav]').forEach(el => {
+    el.classList.toggle('active', el.dataset.nav === page);
+  });
 
   const lo = document.getElementById('logout-btn');
   if (lo) {

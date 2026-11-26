@@ -774,3 +774,51 @@ input[type="checkbox"], input[type="radio"] {
   .how-step { grid-template-columns: 1fr; gap: 24px; }
   .how-roles { gap: 48px; }
 }
+
+/* ---------- 顶栏重构 ---------- */
+.topbar-inner { height: 72px; gap: 44px; }
+.brand { gap: 12px; }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 8px;
+  font-size: 18px; background: rgba(255, 255, 255, .55);
+  box-shadow: var(--glass-inner);
+}
+.brand-text { display: flex; flex-direction: column; gap: 1px; }
+.brand-name { font-family: var(--font-display); font-size: 18px; letter-spacing: .02em; color: var(--ink); }
+.brand-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--muted); }
+.brand:hover .brand-name { color: var(--seal); }
+.brand:hover { text-decoration: none; }
+
+.nav { gap: 2px; }
+.nav a {
+  padding: 8px 14px; border-radius: 10px; font-size: 14px; color: var(--ink-2);
+  transition: background-color .16s var(--ease), color .16s var(--ease);
+}
+.nav a:hover { background: rgba(255, 255, 255, .55); color: var(--ink); text-decoration: none; }
+.nav a.active { background: rgba(255, 255, 255, .72); color: var(--ink); box-shadow: var(--glass-inner); }
+
+.auth-slot { gap: 6px; }
+.auth-slot .btn-sm { height: 34px; padding: 0 14px; }
+.top-link {
+  padding: 8px 12px; border-radius: 10px;
+  font-size: 14px; color: var(--ink-2);
+  transition: background-color .16s var(--ease), color .16s var(--ease);
+}
+.top-link:hover { background: rgba(255, 255, 255, .55); color: var(--ink); text-decoration: none; }
+.top-link.active { background: rgba(255, 255, 255, .72); color: var(--ink); box-shadow: var(--glass-inner); }
+.top-link i {
+  font-style: normal; font-family: var(--font-mono); font-size: 10px;
+  color: var(--seal); margin-left: 4px; vertical-align: super;
+}
+.top-logout { padding: 8px 6px; color: var(--muted); font-size: 13px; }
+.top-logout:hover { color: var(--ink); }
+.auth-slot .avatar { margin-left: 4px; }
+
+@media (max-width: 760px) {
+  .topbar-inner { height: 64px; gap: 16px; }
+  .brand-mark { width: 32px; height: 32px; font-size: 16px; }
+  .brand-name { font-size: 16px; }
+  .brand-sub { font-size: 9px; letter-spacing: .08em; }
+  .top-link { padding: 6px 8px; font-size: 13px; }
+  .top-logout { display: none; }
+}
