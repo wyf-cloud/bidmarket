@@ -614,3 +614,29 @@ input[type="checkbox"], input[type="radio"] {
   .demo-actions { margin-left: 0; width: 100%; }
   .msg { max-width: 88%; }
 }
+
+/* ---------- 公告栏：深浅主题与条目颜色 ---------- */
+.ticker.light {
+  background: rgba(255, 255, 255, .55);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--glass-inner);
+}
+.ticker-track > span { display: inline-flex; align-items: center; }
+.tk-sep { opacity: .42; padding: 0 16px; font-size: 12px; }
+.tk-default { color: inherit; }
+.tk-red { color: #f0b3a8; }
+.tk-warm { color: #f0cf9a; }
+.tk-green { color: #b6ddc2; }
+.ticker.light .tk-red { color: var(--seal); }
+.ticker.light .tk-warm { color: #8a5a1f; }
+.ticker.light .tk-green { color: #3f6b4a; }
+.ticker a { text-decoration: none; border-bottom: 1px solid currentColor; }
+.ticker a:hover { opacity: .82; text-decoration: none; }
+
+/* 表格里的小输入框 */
+.admin-table input, .admin-table select {
+  height: 32px; padding: 4px 8px; font-size: 13px; border-radius: 8px;
+}
+.admin-table td { vertical-align: middle; }
+.w-64 { width: 64px; }

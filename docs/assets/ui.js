@@ -112,39 +112,63 @@ export function openDialog(title, bodyHtml, { submitText = '确定', onSubmit, d
   return d;
 }
 
-/* 顶部滚动公告：从 site_settings 读取，管理员可在后台修改 */
+/* 顶部滚动公告：多条 + 颜色 + 链接，管理员可在后台维护 */
 export async function refreshTicker() {
   const el = document.getElementById('ticker');
   if (!el) return;
-  try {
-    const { data, error } = await db.from('site_settings')
-      .select('announcement, announcement_enabled, announcement_speed')
-      .eq('id', 1).maybeSingle();
-    if (error || !data || !data.announcement_enabled) {
-      el.hidden = true; el.innerHTML = ''; return;
-    }
-    const lines = String(data.announcement || '')
-      .split('\n').map(s => s.trim()).filter(Boolean);
-    if (!lines.length) { el.hidden = true; el.innerHTML = ''; return; }
+  const hide = () => { el.hidden = true; el.innerHTML = ''; };
 
-    const text = lines.join('　·　');
-    const dur = Math.min(180, Math.max(10, Number(data.announcement_speed) || 40));
+  try {
+    const { data: s, error: se } = await db.from('site_settings')
+      .select('announcement, announcement_enabled, announcement_speed, ticker_theme')
+      .eq('id', 1).maybeSingle();
+    if (se || !s || !s.announcement_enabled) { hide(); return; }
+
+    let items = [];
+    const { data: rows, error: ae } = await db.from('announcements')
+      .select('text, href, color, sort, enabled')
+      .eq('enabled', true)
+      .order('sort', { ascending: true });
+    if (!ae && rows) items = rows.filter(r => r.text && String(r.text).trim());
+
+    // 兼容旧版：新表还没建或为空时，退回 site_settings 里的单条文本
+    if (!items.length && s.announcement) {
+      items = String(s.announcement).split('\n')
+        .map(t => t.trim()).filter(Boolean)
+        .map(text => ({ text, href: null, color: 'default' }));
+    }
+    if (!items.length) { hide(); return; }
+
+    const theme = s.ticker_theme === 'light' ? 'light' : 'dark';
+    el.className = 'ticker ' + theme;
     el.hidden = false;
+
+    const sep = '<span class="tk-sep">·</span>';
+    const unitHtml = items.map(it => {
+      const color = ['red', 'warm', 'green'].includes(it.color) ? it.color : 'default';
+      const cls = 'tk-' + color;
+      const body = esc(String(it.text).trim());
+      return it.href
+        ? `<a class="${cls}" href="${esc(it.href)}">${body}</a>`
+        : `<span class="${cls}">${body}</span>`;
+    }).join(sep);
+
+    const dur = Math.min(180, Math.max(10, Number(s.announcement_speed) || 40));
     el.innerHTML = `<div class="ticker-track" style="--dur:${dur}s">
       <span></span><span aria-hidden="true"></span>
     </div>`;
 
-    // 短文案要重复到铺满一屏，否则右侧会留白、看起来像停住
+    // 文案短时重复到铺满一屏，避免右侧留白
     const track = el.querySelector('.ticker-track');
     const first = track.children[0];
-    first.textContent = text;
+    first.innerHTML = unitHtml;
     const unitW = first.scrollWidth || 1;
     const need = Math.max(1, Math.ceil((window.innerWidth * 1.2) / unitW));
-    const full = need > 1 ? new Array(need).fill(text).join('　·　') : text;
-    first.textContent = full;
-    track.children[1].textContent = full;
+    const full = new Array(need).fill(unitHtml).join(sep);
+    first.innerHTML = full;
+    track.children[1].innerHTML = full;
   } catch {
-    el.hidden = true;
+    hide();
   }
 }
 

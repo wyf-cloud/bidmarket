@@ -9,6 +9,8 @@ import { empty, renderHeader, openDialog, confirmDialog, refreshTicker } from '.
 
 const app = () => document.getElementById('app');
 
+const COLOR_LABEL = { default: '默认', red: '强调红', warm: '暖黄', green: '绿色' };
+
 export async function viewAdmin() {
   if (!needLogin('请先登录')) return;
   await loadProfile();
@@ -274,60 +276,168 @@ async function renderReports(body) {
    站点设置
    ============================================================ */
 async function renderSettings(body) {
-  const { data, error } = await db.from('site_settings')
-    .select('announcement, announcement_enabled, announcement_speed')
-    .eq('id', 1).maybeSingle();
+  const [sRes, aRes] = await Promise.all([
+    db.from('site_settings')
+      .select('announcement_enabled, announcement_speed, ticker_theme')
+      .eq('id', 1).maybeSingle(),
+    db.from('announcements').select('*').order('sort', { ascending: true })
+  ]);
 
-  if (error) {
+  if (sRes.error) {
     body.innerHTML = `<div class="panel">
       <h2>站点设置</h2>
-      <p class="muted">读取失败：${esc(zhError(error.message))}</p>
-      <p class="muted small">如果提示 site_settings 不存在，先在 SQL Editor 执行
+      <p class="muted">读取失败：${esc(zhError(sRes.error.message))}</p>
+      <p class="muted small">请先在 SQL Editor 执行
         <code>supabase/migrations/2026-11-26-announcement.sql</code>。</p>
     </div>`;
     return;
   }
 
-  const s = data || {};
+  const s = sRes.data || {};
+  const items = aRes.data || [];
+  const tableMissing = !!aRes.error;
+
   body.innerHTML = `
     <div class="panel">
-      <h2>滚动公告</h2>
+      <h2>公告栏</h2>
       <p class="sub">显示在所有页面顶部，一条循环滚动。关闭后整条隐藏。</p>
-      <form id="ann-form">
+      <form id="tk-form">
         <label class="check">
-          <input type="checkbox" name="enabled" ${s.announcement_enabled ? 'checked' : ''}> 启用滚动公告
+          <input type="checkbox" name="enabled" ${s.announcement_enabled ? 'checked' : ''}> 启用公告栏
         </label>
-        <div class="field">
-          <label>公告内容（每行一条）</label>
-          <textarea name="announcement" rows="4"
-            placeholder="例如：新用户首次发布任务，审核通过后赠送一次置顶">${esc(s.announcement || '')}</textarea>
-          <div class="hint">多行会用「·」连接成一条循环播放。</div>
+        <div class="row">
+          <div class="field">
+            <label>滚动一圈秒数（10–180，越小越快）</label>
+            <input type="number" name="speed" min="10" max="180" step="5"
+              value="${Number(s.announcement_speed) || 40}">
+          </div>
+          <div class="field">
+            <label>底色</label>
+            <select name="theme">
+              <option value="dark" ${s.ticker_theme !== 'light' ? 'selected' : ''}>深色玻璃</option>
+              <option value="light" ${s.ticker_theme === 'light' ? 'selected' : ''}>浅色玻璃</option>
+            </select>
+          </div>
         </div>
-        <div class="field">
-          <label>滚动一圈秒数（10–180，越小越快）</label>
-          <input type="number" name="speed" min="10" max="180" step="5"
-            value="${Number(s.announcement_speed) || 40}">
-        </div>
-        <button class="btn btn-primary" type="submit">保存</button>
+        <button class="btn btn-primary" type="submit">保存设置</button>
       </form>
+    </div>
+
+    <div class="panel">
+      <h2>公告条目（${items.length}）</h2>
+      <p class="sub">每条可单独设颜色、链接和顺序，只有勾选「启用」的会滚动。</p>
+      ${tableMissing ? `<div class="alert alert-error">
+        公告条目表还不存在，请先在 SQL Editor 执行
+        <code>supabase/migrations/2026-11-26-announcements-rich.sql</code>。
+      </div>` : `
+      ${items.length ? `<table class="admin-table">
+        <thead><tr><th>文本</th><th>链接（可选）</th><th>颜色</th><th>排序</th><th>启用</th><th></th></tr></thead>
+        <tbody>
+          ${items.map(it => `<tr data-id="${esc(it.id)}">
+            <td><input data-f="text" value="${esc(it.text)}" maxlength="200"></td>
+            <td><input data-f="href" value="${esc(it.href || '')}" placeholder="https:// 或 #/tasks"></td>
+            <td><select data-f="color">
+              ${['default', 'red', 'warm', 'green'].map(c =>
+                `<option value="${c}" ${it.color === c ? 'selected' : ''}>${COLOR_LABEL[c]}</option>`).join('')}
+            </select></td>
+            <td><input data-f="sort" type="number" class="w-64" value="${Number(it.sort) || 0}"></td>
+            <td><input data-f="enabled" type="checkbox" ${it.enabled ? 'checked' : ''}></td>
+            <td class="row-actions">
+              <button class="btn btn-ghost btn-sm" data-save>保存</button>
+              <button class="btn btn-ghost btn-sm" data-del>删除</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<p class="muted">还没有公告条目，用下面的表单添加第一条。</p>'}
+      <form id="add-ann" style="margin-top:24px">
+        <div class="row">
+          <div class="field">
+            <label>新增公告文本</label>
+            <input name="text" maxlength="200" required
+              placeholder="例如：新用户首次发布任务，审核通过后赠送一次置顶">
+          </div>
+          <div class="field">
+            <label>链接（可选）</label>
+            <input name="href" placeholder="https://… 或 #/tasks">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit">添加</button>
+      </form>`}
     </div>`;
 
-  const form = document.getElementById('ann-form');
-  form.onsubmit = async (e) => {
+  const tkForm = document.getElementById('tk-form');
+  tkForm.onsubmit = async (e) => {
     e.preventDefault();
-    const fd = new FormData(form);
-    const btn = form.querySelector('button');
+    const fd = new FormData(tkForm);
+    const btn = tkForm.querySelector('button');
     btn.disabled = true;
-    const { error: e2 } = await db.from('site_settings').update({
-      announcement: String(fd.get('announcement') || '').trim() || null,
+    const { error } = await db.from('site_settings').update({
       announcement_enabled: fd.get('enabled') === 'on',
       announcement_speed: Number(fd.get('speed')) || 40,
+      ticker_theme: fd.get('theme') === 'light' ? 'light' : 'dark',
       updated_at: new Date().toISOString()
     }).eq('id', 1);
     btn.disabled = false;
-    if (e2) { toast(zhError(e2.message), 'error'); return; }
+    if (error) { toast(zhError(error.message), 'error'); return; }
     toast('已保存');
     await refreshTicker();
+  };
+
+  if (tableMissing) return;
+
+  body.querySelectorAll('tr[data-id]').forEach(tr => {
+    const id = tr.dataset.id;
+    const val = (f) => tr.querySelector(`[data-f="${f}"]`);
+
+    tr.querySelector('[data-save]').onclick = async () => {
+      const text = val('text').value.trim();
+      if (!text) { toast('文本不能为空', 'error'); return; }
+      const btn = tr.querySelector('[data-save]');
+      btn.disabled = true;
+      const { error } = await db.from('announcements').update({
+        text,
+        href: val('href').value.trim() || null,
+        color: val('color').value,
+        sort: Number(val('sort').value) || 0,
+        enabled: val('enabled').checked
+      }).eq('id', id);
+      btn.disabled = false;
+      if (error) { toast(zhError(error.message), 'error'); return; }
+      toast('已保存');
+      await refreshTicker();
+    };
+
+    tr.querySelector('[data-del]').onclick = async () => {
+      const ok = await confirmDialog('删除这条公告？', { okText: '删除', danger: true });
+      if (!ok) return;
+      const { error } = await db.from('announcements').delete().eq('id', id);
+      if (error) { toast(zhError(error.message), 'error'); return; }
+      toast('已删除');
+      await refreshTicker();
+      await viewAdmin();
+    };
+  });
+
+  const addForm = document.getElementById('add-ann');
+  addForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(addForm);
+    const text = String(fd.get('text') || '').trim();
+    if (!text) return;
+    const btn = addForm.querySelector('button');
+    btn.disabled = true;
+    const nextSort = items.reduce((m, it) => Math.max(m, Number(it.sort) || 0), 0) + 1;
+    const { error } = await db.from('announcements').insert({
+      text,
+      href: String(fd.get('href') || '').trim() || null,
+      sort: nextSort,
+      enabled: true
+    });
+    btn.disabled = false;
+    if (error) { toast(zhError(error.message), 'error'); return; }
+    toast('已添加');
+    await refreshTicker();
+    await viewAdmin();
   };
 }
 
