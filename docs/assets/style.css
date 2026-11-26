@@ -554,3 +554,38 @@ textarea { height: auto; min-height: 112px; resize: vertical; line-height: 1.7; 
 }
 /* 确认弹窗文字 */
 .dialog-text { margin: 0 0 20px; font-size: 14px; line-height: 1.8; color: var(--ink-2); }
+
+/* ---------- 顶部滚动公告 ---------- */
+.ticker {
+  height: 38px;
+  display: flex; align-items: center;
+  background: var(--ink); color: var(--paper-2);
+  overflow: hidden;
+}
+.ticker-track {
+  display: flex; white-space: nowrap; will-change: transform;
+  animation: ticker-scroll var(--dur, 40s) linear infinite;
+}
+.ticker-track > span {
+  padding-right: 56px;
+  font-size: 13px; letter-spacing: .02em;
+}
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker { overflow-x: auto; }
+  .ticker-track { animation: none; }
+}
+
+/* 复选框不要套用输入框样式 */
+input[type="checkbox"], input[type="radio"] {
+  width: 16px; height: 16px; padding: 0; flex: none;
+  accent-color: var(--ink);
+}
+.check {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; margin-bottom: 18px; color: var(--ink);
+}

@@ -5,7 +5,7 @@ import {
   db, state, loadProfile, refreshUnread, setRenderer, toast
 } from './lib.js';
 import { DEMO, demoApi } from './demo.js';
-import { renderHeader } from './ui.js';
+import { renderHeader, refreshTicker } from './ui.js';
 import { viewHome, viewTasks, viewTask, viewPublish, viewEdit, leaveTask } from './views-feed.js';
 import { viewLogin, viewRegister, viewReset, viewMe, viewSettings, viewNotifications } from './views-auth.js';
 import { viewAdmin, viewHow, viewNotFound } from './views-admin.js';
@@ -157,6 +157,7 @@ async function boot() {
   await loadProfile();
   await refreshUnread();
   renderHeader();
+  refreshTicker();
   subscribeBell();
 
   db.auth.onAuthStateChange((event, session) => {

@@ -5,7 +5,7 @@ import {
   db, state, esc, toast, zhError, currentUid, needLogin, loadProfile,
   dateText, fullTime, TASK_STATUS, stars
 } from './lib.js';
-import { empty, renderHeader, openDialog, confirmDialog } from './ui.js';
+import { empty, renderHeader, openDialog, confirmDialog, refreshTicker } from './ui.js';
 
 const app = () => document.getElementById('app');
 
@@ -29,6 +29,7 @@ export async function viewAdmin() {
         <button data-atab="users" class="${tab === 'users' ? 'active' : ''}">用户</button>
         <button data-atab="tasks" class="${tab === 'tasks' ? 'active' : ''}">任务</button>
         <button data-atab="reports" class="${tab === 'reports' ? 'active' : ''}">举报</button>
+        <button data-atab="settings" class="${tab === 'settings' ? 'active' : ''}">设置</button>
       </div>
       <div id="admin-body"><div class="empty">加载中…</div></div>
     </section>`;
@@ -44,6 +45,7 @@ export async function viewAdmin() {
   else if (tab === 'users') await renderUsers(body);
   else if (tab === 'tasks') await renderTasks(body);
   else if (tab === 'reports') await renderReports(body);
+  else if (tab === 'settings') await renderSettings(body);
   else await renderOverview(body);
 }
 
@@ -266,6 +268,67 @@ async function renderReports(body) {
       await viewAdmin();
     };
   });
+}
+
+/* ============================================================
+   站点设置
+   ============================================================ */
+async function renderSettings(body) {
+  const { data, error } = await db.from('site_settings')
+    .select('announcement, announcement_enabled, announcement_speed')
+    .eq('id', 1).maybeSingle();
+
+  if (error) {
+    body.innerHTML = `<div class="panel">
+      <h2>站点设置</h2>
+      <p class="muted">读取失败：${esc(zhError(error.message))}</p>
+      <p class="muted small">如果提示 site_settings 不存在，先在 SQL Editor 执行
+        <code>supabase/migrations/2026-11-26-announcement.sql</code>。</p>
+    </div>`;
+    return;
+  }
+
+  const s = data || {};
+  body.innerHTML = `
+    <div class="panel">
+      <h2>滚动公告</h2>
+      <p class="sub">显示在所有页面顶部，一条循环滚动。关闭后整条隐藏。</p>
+      <form id="ann-form">
+        <label class="check">
+          <input type="checkbox" name="enabled" ${s.announcement_enabled ? 'checked' : ''}> 启用滚动公告
+        </label>
+        <div class="field">
+          <label>公告内容（每行一条）</label>
+          <textarea name="announcement" rows="4"
+            placeholder="例如：新用户首次发布任务，审核通过后赠送一次置顶">${esc(s.announcement || '')}</textarea>
+          <div class="hint">多行会用「·」连接成一条循环播放。</div>
+        </div>
+        <div class="field">
+          <label>滚动一圈秒数（10–180，越小越快）</label>
+          <input type="number" name="speed" min="10" max="180" step="5"
+            value="${Number(s.announcement_speed) || 40}">
+        </div>
+        <button class="btn btn-primary" type="submit">保存</button>
+      </form>
+    </div>`;
+
+  const form = document.getElementById('ann-form');
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const btn = form.querySelector('button');
+    btn.disabled = true;
+    const { error: e2 } = await db.from('site_settings').update({
+      announcement: String(fd.get('announcement') || '').trim() || null,
+      announcement_enabled: fd.get('enabled') === 'on',
+      announcement_speed: Number(fd.get('speed')) || 40,
+      updated_at: new Date().toISOString()
+    }).eq('id', 1);
+    btn.disabled = false;
+    if (e2) { toast(zhError(e2.message), 'error'); return; }
+    toast('已保存');
+    await refreshTicker();
+  };
 }
 
 /* ============================================================

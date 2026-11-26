@@ -112,6 +112,32 @@ export function openDialog(title, bodyHtml, { submitText = '确定', onSubmit, d
   return d;
 }
 
+/* 顶部滚动公告：从 site_settings 读取，管理员可在后台修改 */
+export async function refreshTicker() {
+  const el = document.getElementById('ticker');
+  if (!el) return;
+  try {
+    const { data, error } = await db.from('site_settings')
+      .select('announcement, announcement_enabled, announcement_speed')
+      .eq('id', 1).maybeSingle();
+    if (error || !data || !data.announcement_enabled) {
+      el.hidden = true; el.innerHTML = ''; return;
+    }
+    const lines = String(data.announcement || '')
+      .split('\n').map(s => s.trim()).filter(Boolean);
+    if (!lines.length) { el.hidden = true; el.innerHTML = ''; return; }
+
+    const text = lines.join('　·　');
+    const dur = Math.min(180, Math.max(10, Number(data.announcement_speed) || 40));
+    el.hidden = false;
+    el.innerHTML = `<div class="ticker-track" style="--dur:${dur}s">
+      <span>${esc(text)}</span><span aria-hidden="true">${esc(text)}</span>
+    </div>`;
+  } catch {
+    el.hidden = true;
+  }
+}
+
 export function confirmDialog(text, { okText = '确定', danger = false } = {}) {
   return new Promise((resolve) => {
     closeDialog();
