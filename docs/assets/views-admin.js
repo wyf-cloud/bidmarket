@@ -207,7 +207,7 @@ export function viewHow() {
       <div class="section-head"><h2>怎么用</h2></div>
       <div class="steps" style="margin-top:0">
         <div class="step"><b>需求方</b><h4>发布任务</h4>
-          <p>填标题、类型、预算区间、投标截止时间和需求说明，可上传招标文件附件。</p></div>
+          <p>填标题、类型、预算区间、投标截止时间和需求说明，全部用文字描述，平台不接收招标文件。</p></div>
         <div class="step"><b>服务方</b><h4>提交报价</h4>
           <p>挑任务，填金额、工期和方案。每个任务只能报一次，选定前可撤回。</p></div>
         <div class="step"><b>双方</b><h4>沟通与交付</h4>

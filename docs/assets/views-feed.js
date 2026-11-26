@@ -221,10 +221,9 @@ export async function viewTask(id) {
   const isProvider = !!(myBid && myBid.status === 'accepted');
 
   const { data: files } = await db.from('files')
-    .select('*').eq('task_id', id).order('created_at');
+    .select('*').eq('task_id', id).eq('kind', 'deliverable').order('created_at');
   const allFiles = files || [];
-  const taskFiles = allFiles.filter(f => f.kind === 'task');
-  const deliverables = allFiles.filter(f => f.kind === 'deliverable');
+  const deliverables = allFiles;
 
   let msgs = [];
   let reviews = [];
@@ -259,16 +258,6 @@ export async function viewTask(id) {
     </section>
 
     <div class="prose">${esc(t.description)}</div>
-
-    ${taskFiles.length ? `<div class="panel">
-      <h2>任务附件</h2>
-      ${fileList(taskFiles, { canDelete: isOwner })}
-      ${isOwner && t.status === 'open' ? `<div style="margin-top:12px">${uploadZone(t.id, 'task', '上传任务附件')}</div>` : ''}
-    </div>` : (isOwner && t.status === 'open' ? `<div class="panel">
-      <h2>任务附件</h2>
-      <p class="muted small">可以上传招标文件、图纸等，方便服务方准确报价（单个 ≤20MB）。</p>
-      ${uploadZone(t.id, 'task', '上传任务附件')}
-    </div>` : '')}
 
     ${isOwner ? ownerBlock(t, bids) : bidderBlock(t, myBid, canBid)}
     ${statusPanel(t, { isOwner, isProvider })}
