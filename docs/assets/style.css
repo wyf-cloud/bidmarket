@@ -828,7 +828,7 @@ input[type="checkbox"], input[type="radio"] {
 .task-grid + .task-grid { margin-top: 16px; }
 
 /* ---------- 时效筛选与过期标记 ---------- */
-.filters { grid-template-columns: 1.6fr 1fr 1fr; }
+.filters { grid-template-columns: 1.6fr 1fr 1fr 1fr; }
 .expired-tag {
   font-family: var(--font-mono); font-size: 11px;
   color: var(--seal); border: 1px solid rgba(158, 59, 47, .3);

@@ -142,16 +142,15 @@ async function mountHall(root) {
         <option value="">全部类型</option>
         ${CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
       </select>
+      <select id="hall-exp">
+        <option value="">全部时效</option>
+        <option value="active">未过期</option>
+        <option value="expired">已过期</option>
+      </select>
       <select id="hall-sort">
-        <optgroup label="排序">
-          <option value="new">最新发布</option>
-          <option value="budget">预算从高到低</option>
-          <option value="deadline">截止时间最近</option>
-        </optgroup>
-        <optgroup label="时效">
-          <option value="active">只看未过期</option>
-          <option value="expired">只看已过期</option>
-        </optgroup>
+        <option value="new">最新发布</option>
+        <option value="budget">预算从高到低</option>
+        <option value="deadline">截止时间最近</option>
       </select>
     </div>
     <div id="hall-list"></div>
@@ -197,6 +196,7 @@ async function mountHall(root) {
 
   const qEl = root.querySelector('#hall-q');
   const catEl = root.querySelector('#hall-cat');
+  const expEl = root.querySelector('#hall-exp');
   const sortEl = root.querySelector('#hall-sort');
   let timer;
   qEl.oninput = () => {
@@ -204,13 +204,8 @@ async function mountHall(root) {
     timer = setTimeout(() => { st.q = qEl.value.trim(); load(true); }, 280);
   };
   catEl.onchange = () => { st.cat = catEl.value; load(true); };
-  sortEl.onchange = () => {
-    const v = sortEl.value;
-    // 同一组下拉里，排序与时效二选一
-    if (v === 'active' || v === 'expired') { st.exp = v; st.sort = 'new'; }
-    else { st.sort = v; st.exp = ''; }
-    load(true);
-  };
+  expEl.onchange = () => { st.exp = expEl.value; load(true); };
+  sortEl.onchange = () => { st.sort = sortEl.value; load(true); };
   moreBtn.onclick = () => load(false);
 
   await load(true);
