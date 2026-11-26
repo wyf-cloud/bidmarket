@@ -640,3 +640,39 @@ input[type="checkbox"], input[type="radio"] {
 }
 .admin-table td { vertical-align: middle; }
 .w-64 { width: 64px; }
+
+/* ---------- 动效 ---------- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .55s var(--ease), transform .55s var(--ease);
+}
+[data-reveal].in { opacity: 1; transform: none; }
+
+.typing {
+  margin: -14px 0 28px;
+  min-height: 22px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: .02em;
+  color: var(--ink-2);
+}
+
+.card {
+  transition: background-color .18s var(--ease), border-color .18s var(--ease),
+              box-shadow .18s var(--ease), transform .18s var(--ease);
+}
+.card:hover { transform: translateY(-2px); }
+
+@keyframes seal-stamp {
+  0%   { opacity: 0;   transform: rotate(-9deg) scale(1.55); }
+  55%  { opacity: .92; transform: rotate(-9deg) scale(.96); }
+  100% { opacity: .82; transform: rotate(-9deg) scale(1); }
+}
+.doc-seal { animation: seal-stamp .9s var(--ease) .45s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .doc-seal { animation: none; }
+  .card:hover { transform: none; }
+}

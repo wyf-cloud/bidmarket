@@ -2,6 +2,7 @@
    公共库：Supabase 客户端、状态、格式化、提示
    ============================================================ */
 import { createDemoClient, DEMO as IS_DEMO } from './demo.js';
+import { DEFAULT_COPY } from './content.js';
 
 const CFG = window.__SUPABASE__ || {};
 
@@ -154,8 +155,23 @@ export async function loadProfile() {
   return state.profile;
 }
 
-export async function refreshUnread() {
-  if (!currentUid()) { state.unread = 0; return 0; }
+/** 首页文案：后台可改，没填的字段回退到默认值 */
+export async function loadSiteCopy() {
+  const out = { ...DEFAULT_COPY };
+  try {
+    const { data } = await db.from('site_settings')
+      .select('*')
+      .eq('id', 1).maybeSingle();
+    if (data) {
+      for (const k of Object.keys(out)) {
+        if (data[k] != null && String(data[k]).trim() !== '') out[k] = String(data[k]);
+      }
+    }
+  } catch { /* 表还没建时用默认值 */ }
+  return out;
+}
+
+export async function refreshUnread() {  if (!currentUid()) { state.unread = 0; return 0; }
   const { count } = await db.from('notifications')
     .select('id', { count: 'exact', head: true })
     .is('read_at', null);

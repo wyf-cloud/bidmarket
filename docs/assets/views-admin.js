@@ -6,6 +6,7 @@ import {
   dateText, fullTime, TASK_STATUS, stars
 } from './lib.js';
 import { empty, renderHeader, openDialog, confirmDialog, refreshTicker } from './ui.js';
+import { DEFAULT_COPY } from './content.js';
 
 const app = () => document.getElementById('app');
 
@@ -278,7 +279,7 @@ async function renderReports(body) {
 async function renderSettings(body) {
   const [sRes, aRes] = await Promise.all([
     db.from('site_settings')
-      .select('announcement_enabled, announcement_speed, ticker_theme')
+      .select('*')
       .eq('id', 1).maybeSingle(),
     db.from('announcements').select('*').order('sort', { ascending: true })
   ]);
@@ -294,10 +295,52 @@ async function renderSettings(body) {
   }
 
   const s = sRes.data || {};
+  const copy = { ...DEFAULT_COPY };
+  for (const k of Object.keys(copy)) if (s[k]) copy[k] = s[k];
   const items = aRes.data || [];
   const tableMissing = !!aRes.error;
 
   body.innerHTML = `
+    <div class="panel">
+      <h2>首页文案</h2>
+      <p class="sub">保存后刷新首页生效。标题里 <code>**文字**</code> 会高亮，换行即分行。</p>
+      <form id="copy-form">
+        <div class="field">
+          <label>顶部小标签</label>
+          <input name="hero_eyebrow" maxlength="40" value="${esc(copy.hero_eyebrow)}">
+        </div>
+        <div class="field">
+          <label>主标题</label>
+          <textarea name="hero_title" rows="3">${esc(copy.hero_title)}</textarea>
+        </div>
+        <div class="field">
+          <label>副标题</label>
+          <textarea name="hero_lead" rows="3">${esc(copy.hero_lead)}</textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>主按钮文字</label>
+            <input name="hero_cta1" maxlength="12" value="${esc(copy.hero_cta1)}">
+          </div>
+          <div class="field">
+            <label>次按钮文字</label>
+            <input name="hero_cta2" maxlength="12" value="${esc(copy.hero_cta2)}">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>打字机前缀</label>
+            <input name="typing_prefix" maxlength="16" value="${esc(copy.typing_prefix)}">
+          </div>
+          <div class="field">
+            <label>打字机词条（每行一个）</label>
+            <textarea name="typing_words" rows="3">${esc(copy.typing_words)}</textarea>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">保存文案</button>
+      </form>
+    </div>
+
     <div class="panel">
       <h2>公告栏</h2>
       <p class="sub">显示在所有页面顶部，一条循环滚动。关闭后整条隐藏。</p>
@@ -365,8 +408,28 @@ async function renderSettings(body) {
       </form>`}
     </div>`;
 
-  const tkForm = document.getElementById('tk-form');
-  tkForm.onsubmit = async (e) => {
+  const copyForm = document.getElementById('copy-form');
+  copyForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(copyForm);
+    const btn = copyForm.querySelector('button');
+    btn.disabled = true;
+    const { error } = await db.from('site_settings').update({
+      hero_eyebrow: String(fd.get('hero_eyebrow') || '').trim() || null,
+      hero_title: String(fd.get('hero_title') || '').trim() || null,
+      hero_lead: String(fd.get('hero_lead') || '').trim() || null,
+      hero_cta1: String(fd.get('hero_cta1') || '').trim() || null,
+      hero_cta2: String(fd.get('hero_cta2') || '').trim() || null,
+      typing_prefix: String(fd.get('typing_prefix') || '').trim() || null,
+      typing_words: String(fd.get('typing_words') || '').trim() || null,
+      updated_at: new Date().toISOString()
+    }).eq('id', 1);
+    btn.disabled = false;
+    if (error) { toast(zhError(error.message), 'error'); return; }
+    toast('已保存，刷新首页生效');
+  };
+
+  const tkForm = document.getElementById('tk-form');  tkForm.onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(tkForm);
     const btn = tkForm.querySelector('button');

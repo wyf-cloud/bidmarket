@@ -4,12 +4,13 @@
 import {
   db, state, CATEGORIES, TASK_STATUS, BID_STATUS, STATUS_HINT,
   esc, money, budgetText, dateText, timeText, sizeText, stars,
-  toast, zhError, currentUid, needLogin, go
+  toast, zhError, currentUid, needLogin, go, loadSiteCopy
 } from './lib.js';
 import {
   taskCard, empty, openDialog, reportDialog, closeDialog, confirmDialog
 } from './ui.js';
 import { CONTENT } from './content.js';
+import { typewriter, initReveal } from './motion.js';
 
 const PAGE_SIZE = 10;
 
@@ -17,13 +18,16 @@ const PAGE_SIZE = 10;
    首页
    ============================================================ */
 export async function viewHome() {
-  const { data } = await db.from('tasks')
-    .select('*, owner:profiles(nickname, verified, rating)')
-    .eq('status', 'open')
-    .order('created_at', { ascending: false })
-    .limit(6);
+  const [tasksRes, copy] = await Promise.all([
+    db.from('tasks')
+      .select('*, owner:profiles(nickname, verified, rating)')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(6),
+    loadSiteCopy()
+  ]);
 
-  const list = data || [];
+  const list = tasksRes.data || [];
   const c = CONTENT.contact;
 
   const contactHtml = (c.phone || c.wechat)
@@ -34,19 +38,27 @@ export async function viewHome() {
        </div>`
     : `<p class="muted">${esc(c.note)}</p>`;
 
+  // 标题里 **文字** 会高亮，换行即分行
+  const mdEm = (line) => String(line).split('**')
+    .map((part, i) => (i % 2 ? `<em>${esc(part)}</em>` : esc(part)))
+    .join('');
+  const titleHtml = String(copy.hero_title)
+    .split('\n').filter(s => s.trim())
+    .map(mdEm).join('<br>');
+
   app().innerHTML = `
     <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">标书代写 · 报价撮合</p>
-        <h1>把标书任务发出来，<br>让会做的人<em>直接报价</em>。</h1>
-        <p class="lead">工程、货物、服务类标书与报价文件，发布需求后由服务方报价，
-        你挑一个开始合作。账号密码注册，不需要手机验证码。</p>
+      <div class="hero-copy" data-reveal>
+        <p class="eyebrow">${esc(copy.hero_eyebrow)}</p>
+        <h1>${titleHtml}</h1>
+        <p class="lead">${esc(copy.hero_lead)}</p>
+        <p class="typing" id="typing"></p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#/publish">发布任务</a>
-          <a class="btn btn-ghost" href="#/tasks">去接单</a>
+          <a class="btn btn-primary" href="#/publish">${esc(copy.hero_cta1)}</a>
+          <a class="btn btn-ghost" href="#/tasks">${esc(copy.hero_cta2)}</a>
         </div>
       </div>
-      <div class="hero-visual">
+      <div class="hero-visual" data-reveal>
         <article class="doc">
           <div class="doc-head">
             <span class="doc-code">BM-2026-0142</span>
@@ -66,7 +78,7 @@ export async function viewHome() {
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" data-reveal>
       <div class="section-head">
         <h2>最新任务</h2>
         <a href="#/tasks">查看全部 →</a>
@@ -76,7 +88,7 @@ export async function viewHome() {
         : empty('还没有任务，成为第一个发布的人。', '<a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>')}
     </section>
 
-    <section class="section">
+    <section class="section" data-reveal>
       <div class="section-head"><h2>三条承诺</h2></div>
       <div class="guarantee-grid">
         ${CONTENT.guarantees.map(g => `<div class="guarantee">
@@ -85,7 +97,7 @@ export async function viewHome() {
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" data-reveal>
       <div class="section-head"><h2>常见问题</h2></div>
       <div class="faq">
         ${CONTENT.faq.map(f => `<details>
@@ -95,7 +107,7 @@ export async function viewHome() {
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" data-reveal>
       <div class="contact-box">
         <div>
           <h2>需要报价？</h2>
@@ -107,6 +119,14 @@ export async function viewHome() {
         </div>
       </div>
     </section>`;
+
+  const words = String(copy.typing_words || '')
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  typewriter(document.getElementById('typing'), words, {
+    prefix: copy.typing_prefix || '',
+    speed: 90
+  });
+  initReveal(app());
 }
 
 function app() { return document.getElementById('app'); }

@@ -176,3 +176,14 @@ export const CONTENT = {
     ]
   }
 };
+
+/* 首页文案默认值：后台没填时使用；支持 **文字** 表示高亮 */
+export const DEFAULT_COPY = {
+  hero_eyebrow: '标书代写 · 报价撮合',
+  hero_title: '把标书任务发出来，\n让会做的人**直接报价**。',
+  hero_lead: '工程、货物、服务类标书与报价文件，发布需求后由服务方报价，你挑一个开始合作。账号密码注册，不需要手机验证码。',
+  hero_cta1: '发布任务',
+  hero_cta2: '去接单',
+  typing_prefix: '我们做：',
+  typing_words: '工程类标书\n货物类标书\n服务类标书\n资格预审'
+};

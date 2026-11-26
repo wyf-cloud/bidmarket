@@ -120,7 +120,7 @@ export async function refreshTicker() {
 
   try {
     const { data: s, error: se } = await db.from('site_settings')
-      .select('announcement, announcement_enabled, announcement_speed, ticker_theme')
+      .select('*')
       .eq('id', 1).maybeSingle();
     if (se || !s || !s.announcement_enabled) { hide(); return; }
 
