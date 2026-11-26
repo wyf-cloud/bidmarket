@@ -696,3 +696,18 @@ end $$;
 -- 消息表需要完整行数据做实时推送
 alter table public.messages replica identity full;
 alter table public.notifications replica identity full;
+
+-- ============================================================
+-- 兼容性授权（兜底）
+-- 建项目时如果没勾「Grant API access to new tables automatically」，
+-- 新表不会自动授权给 anon / authenticated，PostgREST 会报 permission denied。
+-- 这里显式补上；行级权限仍然由 RLS 控制。
+-- ============================================================
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+grant usage, select on all sequences in schema public to anon, authenticated;
+
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to anon, authenticated;
+alter default privileges in schema public
+  grant usage, select on sequences to anon, authenticated;
