@@ -54,8 +54,8 @@ export function taskCard(t) {
 }
 
 const TASK_STATUS_LABEL = {
-  open: '招募中', matched: '已选定', in_progress: '进行中',
-  delivered: '已交付', completed: '已完成', cancelled: '已取消'
+  pending: '待审核', open: '招募中', matched: '已选定', in_progress: '进行中',
+  delivered: '已交付', completed: '已完成', cancelled: '已取消', rejected: '未通过'
 };
 
 export function empty(text, actionHtml = '') {

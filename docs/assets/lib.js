@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    公共库：Supabase 客户端、状态、格式化、提示
    ============================================================ */
 import { createDemoClient, DEMO as IS_DEMO } from './demo.js';
@@ -36,8 +36,8 @@ export const state = {
 export const CATEGORIES = ['工程类标书', '货物类标书', '服务类标书', '资格预审', '电子标上传', '其他'];
 
 export const TASK_STATUS = {
-  open: '招募中', matched: '已选定', in_progress: '进行中',
-  delivered: '已交付', completed: '已完成', cancelled: '已取消'
+  pending: '待审核', open: '招募中', matched: '已选定', in_progress: '进行中',
+  delivered: '已交付', completed: '已完成', cancelled: '已取消', rejected: '未通过'
 };
 
 export const BID_STATUS = {
@@ -45,11 +45,13 @@ export const BID_STATUS = {
 };
 
 export const STATUS_HINT = {
+  pending: '已提交，等待管理员审核。审核通过后会出现在任务大厅。',
   open: '还在招募，等报价。',
   matched: '已选定服务方。中标方可标记交付，发布方可确认完成或取消。',
   delivered: '已标记交付，等待发布方确认。',
   completed: '任务已完成，可以互评。',
-  cancelled: '任务已取消。'
+  cancelled: '任务已取消。',
+  rejected: '未通过审核，可以修改后重新发布。'
 };
 
 /* ---------- 文本 ---------- */

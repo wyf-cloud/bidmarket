@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    演示客户端：没有配置 Supabase 时接管 db，用内存假数据跑通全部界面
    只用于预览，数据刷新即重置，不会写入任何服务器
    ============================================================ */
@@ -212,6 +212,7 @@ class Query {
           created_at: item.created_at || new Date().toISOString(),
           ...item
         };
+        if (this.table === 'tasks' && !row.status) row.status = 'pending';
         rows.push(row);
         return clone(decorate(this.table, row, this.cols));
       });
@@ -333,6 +334,25 @@ function ok() { return { data: null, error: null }; }
 function fail(msg) { return { data: null, error: { message: msg } }; }
 
 async function rpc(name, params) {
+  if (name === 'approve_task') {
+    const task = findTask(params.p_task);
+    if (!task) return fail('任务不存在');
+    if (task.status !== 'pending') return fail('只有待审核的任务可以审核');
+    task.status = 'open';
+    notify(task.owner_id, 'status', task.id, '审核通过，已上线');
+    return ok();
+  }
+
+  if (name === 'reject_task') {
+    const task = findTask(params.p_task);
+    if (!task) return fail('任务不存在');
+    if (task.status !== 'pending') return fail('只有待审核的任务可以审核');
+    task.status = 'rejected';
+    task.review_note = params.p_note || null;
+    notify(task.owner_id, 'status', task.id, '未通过审核');
+    return ok();
+  }
+
   if (name === 'accept_bid') {
     const bid = findBid(params.p_bid_id);
     if (!bid) return fail('报价不存在');

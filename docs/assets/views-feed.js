@@ -251,6 +251,13 @@ export async function viewTask(id) {
       </div>
     </section>
 
+    ${t.status === 'pending' ? `<div class="alert alert-info">
+      该任务正在等待管理员审核，通过后才会出现在任务大厅${isOwner ? '，通过时会收到通知' : ''}。
+    </div>` : ''}
+    ${t.status === 'rejected' ? `<div class="alert alert-error">
+      该任务未通过审核${t.review_note ? '：' + esc(t.review_note) : ''}。可以修改后重新发布。
+    </div>` : ''}
+
     <div class="prose">${esc(t.description)}</div>
 
     ${isOwner ? ownerBlock(t, bids) : bidderBlock(t, myBid, canBid)}
@@ -315,6 +322,12 @@ function bidderBlock(t, myBid, canBid) {
         ? '<button class="btn btn-ghost btn-sm" id="withdraw">撤回报价</button>' : ''}
     </div>`;
   }
+  if (t.status === 'pending') {
+    return '<div class="panel"><p class="muted">该任务正在审核中，暂不能报价。</p></div>';
+  }
+  if (t.status === 'rejected') {
+    return '<div class="panel"><p class="muted">该任务未通过审核。</p></div>';
+  }
   if (t.status !== 'open') {
     return '<div class="panel"><p class="muted">该任务已停止招募，无法再报价。</p></div>';
   }
@@ -339,8 +352,8 @@ function bidderBlock(t, myBid, canBid) {
 
 function statusPanel(t, c) {
   const acts = [];
-  if (c.isOwner && (t.status === 'open' || t.status === 'matched')) {
-    acts.push('<button class="btn btn-ghost btn-sm" data-act="cancel">取消任务</button>');
+  if (c.isOwner && (t.status === 'pending' || t.status === 'open' || t.status === 'matched')) {
+    acts.push(`<button class="btn btn-ghost btn-sm" data-act="cancel">${t.status === 'pending' ? '撤回任务' : '取消任务'}</button>`);
   }
   if (c.isOwner && t.status === 'delivered') {
     acts.push('<button class="btn btn-primary btn-sm" data-act="complete">确认完成</button>');
@@ -628,7 +641,7 @@ async function renderTaskForm(t) {
         .insert({ ...payload, owner_id: currentUid() }).select('id').single();
       btn.disabled = false;
       if (error) { toast(zhError(error.message), 'error'); return; }
-      toast('任务已发布');
+      toast('已提交，审核通过后会出现在任务大厅');
       location.hash = '#/task/' + data.id;
     }
   };

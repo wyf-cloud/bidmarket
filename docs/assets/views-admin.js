@@ -5,7 +5,7 @@ import {
   db, state, esc, toast, zhError, currentUid, needLogin, loadProfile,
   dateText, fullTime, TASK_STATUS, stars
 } from './lib.js';
-import { empty, renderHeader } from './ui.js';
+import { empty, renderHeader, openDialog } from './ui.js';
 
 const app = () => document.getElementById('app');
 
@@ -24,6 +24,7 @@ export async function viewAdmin() {
     <section class="section">
       <div class="section-head"><h2>管理后台</h2></div>
       <div class="tabs">
+        <button data-atab="pending" class="${tab === 'pending' ? 'active' : ''}">待审核</button>
         <button data-atab="overview" class="${tab === 'overview' ? 'active' : ''}">概览</button>
         <button data-atab="users" class="${tab === 'users' ? 'active' : ''}">用户</button>
         <button data-atab="tasks" class="${tab === 'tasks' ? 'active' : ''}">任务</button>
@@ -39,17 +40,86 @@ export async function viewAdmin() {
   });
 
   const body = document.getElementById('admin-body');
-  if (tab === 'users') await renderUsers(body);
+  if (tab === 'pending') await renderPending(body);
+  else if (tab === 'users') await renderUsers(body);
   else if (tab === 'tasks') await renderTasks(body);
   else if (tab === 'reports') await renderReports(body);
   else await renderOverview(body);
+}
+
+async function renderPending(body) {
+  const { data, error } = await db.from('tasks')
+    .select('*, owner:profiles(nickname)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) { body.innerHTML = empty(zhError(error.message)); return; }
+  const tasks = data || [];
+
+  if (!tasks.length) {
+    body.innerHTML = empty('没有待审核的任务。');
+    return;
+  }
+
+  body.innerHTML = `<div class="panel">
+    <h2>待审核（${tasks.length}）</h2>
+    <p class="sub">通过后立刻出现在任务大厅；驳回后发布者会收到通知，可修改后重新发布。</p>
+    <table class="admin-table">
+      <thead><tr><th>标题</th><th>发布者</th><th>预算</th><th>提交时间</th><th>操作</th></tr></thead>
+      <tbody>${tasks.map(t => `<tr>
+        <td><a href="#/task/${esc(t.id)}">${esc(t.title)}</a>
+          <div class="muted small">${esc(t.category)}</div></td>
+        <td>${esc(t.owner ? t.owner.nickname : '—')}</td>
+        <td class="muted small">${t.budget_min || t.budget_max
+          ? '¥' + Number(t.budget_min || t.budget_max).toLocaleString('zh-CN') +
+            (t.budget_max && t.budget_min ? ' – ¥' + Number(t.budget_max).toLocaleString('zh-CN') : '')
+          : '面议'}</td>
+        <td class="muted small">${dateText(t.created_at)}</td>
+        <td class="row-actions">
+          <button class="btn btn-primary btn-sm" data-approve="${esc(t.id)}">通过</button>
+          <button class="btn btn-ghost btn-sm" data-reject="${esc(t.id)}">驳回</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+
+  body.querySelectorAll('[data-approve]').forEach(btn => {
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const { error: e } = await db.rpc('approve_task', { p_task: btn.dataset.approve });
+      if (e) { btn.disabled = false; toast(zhError(e.message), 'error'); return; }
+      toast('已通过，任务已上线');
+      await viewAdmin();
+    };
+  });
+
+  body.querySelectorAll('[data-reject]').forEach(btn => {
+    btn.onclick = () => {
+      openDialog('驳回任务', `
+        <div class="field">
+          <label>驳回原因（可选，会显示给发布者）</label>
+          <textarea name="note" maxlength="200" placeholder="例如：描述过于笼统，请补充评分点和册数"></textarea>
+        </div>`, {
+        submitText: '确认驳回',
+        danger: true,
+        onSubmit: async (fd) => {
+          const { error: e } = await db.rpc('reject_task', {
+            p_task: btn.dataset.reject,
+            p_note: String(fd.get('note') || '')
+          });
+          if (e) { toast(zhError(e.message), 'error'); return false; }
+          toast('已驳回');
+          await viewAdmin();
+        }
+      });
+    };
+  });
 }
 
 async function renderOverview(body) {
   const [u, t, o, r] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
     db.from('tasks').select('id', { count: 'exact', head: true }),
-    db.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    db.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     db.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open')
   ]);
 
@@ -60,7 +130,7 @@ async function renderOverview(body) {
     <div class="stats">
       ${stat('注册用户', u.count || 0)}
       ${stat('任务总数', t.count || 0)}
-      ${stat('招募中', o.count || 0)}
+      ${stat('待审核', o.count || 0)}
       ${stat('待处理举报', r.count || 0)}
     </div>
     <div class="panel">
@@ -207,7 +277,7 @@ export function viewHow() {
       <div class="section-head"><h2>怎么用</h2></div>
       <div class="steps" style="margin-top:0">
         <div class="step"><b>需求方</b><h4>发布任务</h4>
-          <p>填标题、类型、预算区间、投标截止时间和需求说明，全部用文字描述，平台不接收招标文件。</p></div>
+          <p>填标题、类型、预算区间、投标截止时间和需求说明，全部用文字描述。提交后需管理员审核，通过后才会出现在任务大厅。</p></div>
         <div class="step"><b>服务方</b><h4>提交报价</h4>
           <p>挑任务，填金额、工期和方案。每个任务只能报一次，选定前可撤回。</p></div>
         <div class="step"><b>双方</b><h4>沟通与交付</h4>
