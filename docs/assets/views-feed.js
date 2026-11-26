@@ -47,54 +47,14 @@ export async function viewHome() {
       </div>
     </section>
 
-    <section class="section" id="services">
-      <div class="section-head"><h2>服务范围</h2><span class="muted small">把需求写清楚，报价会准很多</span></div>
-      <div class="svc-grid">
-        ${CONTENT.services.map(s => `<div class="svc">
-          <span class="svc-mark">${esc(s.mark)}</span>
-          <h3>${esc(s.name)}</h3>
-          <p>${esc(s.desc)}</p>
-        </div>`).join('')}
-      </div>
-    </section>
-
-    <section class="section" id="pricing">
-      <div class="section-head"><h2>报价参考</h2><span class="muted small">仅供参考，以实际报价为准</span></div>
-      <div class="panel">
-        <table class="price-table">
-          <thead><tr><th>类型</th><th>参考价</th><th>交付周期</th></tr></thead>
-          <tbody>
-            ${CONTENT.pricing.map(p => `<tr>
-              <td>${esc(p.type)}</td>
-              <td class="price">${esc(p.price)}</td>
-              <td class="muted">${esc(p.eta)}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        <p class="muted small" style="margin:16px 0 0">${esc(CONTENT.pricingNote)}</p>
-      </div>
-    </section>
-
     <section class="section">
-      <div class="section-head"><h2>怎么走</h2></div>
-      <div class="steps" style="margin-top:0">
-        ${CONTENT.flow.map(f => `<div class="step">
-          <b>${esc(f.step)}</b><h4>${esc(f.h)}</h4><p>${esc(f.p)}</p>
-        </div>`).join('')}
+      <div class="section-head">
+        <h2>最新任务</h2>
+        <a href="#/tasks">查看全部 →</a>
       </div>
-    </section>
-
-    <section class="section" id="cases">
-      <div class="section-head"><h2>交付案例</h2><span class="muted small">已脱敏</span></div>
-      <div class="case-grid">
-        ${CONTENT.cases.map(k => `<div class="case">
-          <span class="chip">${esc(k.tag)}</span>
-          <h3>${esc(k.title)}</h3>
-          <p>${esc(k.desc)}</p>
-          <div class="case-meta">${esc(k.meta)}</div>
-        </div>`).join('')}
-      </div>
-      <p class="muted small" style="margin-top:14px">${esc(CONTENT.casesNote)}</p>
+      ${list.length
+        ? `<div class="task-grid">${list.map(taskCard).join('')}</div>`
+        : empty('还没有任务，成为第一个发布的人。', '<a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>')}
     </section>
 
     <section class="section">
@@ -104,16 +64,6 @@ export async function viewHome() {
           <h3>${esc(g.title)}</h3><p>${esc(g.desc)}</p>
         </div>`).join('')}
       </div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <h2>最新任务</h2>
-        <a href="#/tasks">查看全部 →</a>
-      </div>
-      ${list.length
-        ? `<div class="task-grid">${list.map(taskCard).join('')}</div>`
-        : empty('还没有任务，成为第一个发布的人。', '<a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>')}
     </section>
 
     <section class="section">
@@ -130,7 +80,7 @@ export async function viewHome() {
       <div class="contact-box">
         <div>
           <h2>需要报价？</h2>
-          <p class="muted">${esc(CONTENT.contact.note)}</p>
+          <p class="muted">把项目情况写清楚，服务方会给出具体报价。</p>
         </div>
         <div class="contact-right">
           ${contactHtml}
