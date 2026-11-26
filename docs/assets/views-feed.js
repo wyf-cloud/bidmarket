@@ -648,7 +648,8 @@ async function renderTaskForm(t) {
             <input name="budget_max" type="number" min="0" step="100" value="${isEdit && t.budget_max != null ? t.budget_max : ''}"></div>
         </div>
         <div class="field"><label>需求说明</label>
-          <textarea name="description" required placeholder="项目概况、标书册数、是否含电子标上传、期望交付时间…">${isEdit ? esc(t.description) : ''}</textarea></div>
+          <textarea name="description" required placeholder="项目概况、标书册数、是否含电子标上传、期望交付时间…">${isEdit ? esc(t.description) : ''}</textarea>
+          <div class="hint">平台不接收招标文件。请用文字写清评分点、册数和截止时间；涉密资料在选定服务方后再沟通。</div></div>
         <button class="btn btn-primary" type="submit">${isEdit ? '保存修改' : '发布'}</button>
         ${isEdit ? `<a class="btn btn-ghost" href="#/task/${esc(t.id)}">取消</a>` : ''}
       </form>
