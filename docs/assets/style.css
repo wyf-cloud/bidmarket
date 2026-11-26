@@ -822,3 +822,7 @@ input[type="checkbox"], input[type="radio"] {
   .top-link { padding: 6px 8px; font-size: 13px; }
   .top-logout { display: none; }
 }
+
+/* ---------- 首页任务大厅 ---------- */
+.hall-foot { display: flex; justify-content: center; margin-top: 24px; }
+.task-grid + .task-grid { margin-top: 16px; }

@@ -6,7 +6,7 @@ import {
 } from './lib.js';
 import { DEMO, demoApi } from './demo.js';
 import { renderHeader, refreshTicker } from './ui.js';
-import { viewHome, viewTasks, viewTask, viewPublish, viewEdit, leaveTask } from './views-feed.js';
+import { viewHome, viewTask, viewPublish, viewEdit, leaveTask } from './views-feed.js';
 import { viewLogin, viewRegister, viewReset, viewMe, viewSettings, viewNotifications } from './views-auth.js';
 import { viewAdmin, viewNotFound } from './views-admin.js';
 import { viewHow } from './views-how.js';
@@ -31,7 +31,7 @@ async function render() {
 
   try {
     if (page === 'home') await viewHome();
-    else if (page === 'tasks') await viewTasks();
+    else if (page === 'tasks') await viewHome({ focusHall: true });
     else if (page === 'task') {
       if (param2 === 'edit') await viewEdit(param);
       else await viewTask(param);

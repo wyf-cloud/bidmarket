@@ -17,17 +17,8 @@ const PAGE_SIZE = 10;
 /* ============================================================
    首页
    ============================================================ */
-export async function viewHome() {
-  const [tasksRes, copy] = await Promise.all([
-    db.from('tasks')
-      .select('*, owner:profiles(nickname, verified, rating)')
-      .eq('status', 'open')
-      .order('created_at', { ascending: false })
-      .limit(6),
-    loadSiteCopy()
-  ]);
-
-  const list = tasksRes.data || [];
+export async function viewHome(opts = {}) {
+  const copy = await loadSiteCopy();
   const c = CONTENT.contact;
 
   const contactHtml = (c.phone || c.wechat)
@@ -78,14 +69,12 @@ export async function viewHome() {
       </div>
     </section>
 
-    <section class="section" data-reveal>
+    <section class="section" id="hall" data-reveal>
       <div class="section-head">
-        <h2>最新任务</h2>
-        <a href="#/tasks">查看全部 →</a>
+        <h2>任务大厅</h2>
+        <span class="muted small" id="hall-count"></span>
       </div>
-      ${list.length
-        ? `<div class="task-grid">${list.map(taskCard).join('')}</div>`
-        : empty('还没有任务，成为第一个发布的人。', '<a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>')}
+      <div id="hall-root"></div>
     </section>
 
     <section class="section" data-reveal>
@@ -127,6 +116,13 @@ export async function viewHome() {
     speed: 90
   });
   initReveal(app());
+
+  await mountHall(document.getElementById('hall-root'));
+
+  if (opts.focusHall) {
+    const hall = document.getElementById('hall');
+    if (hall) setTimeout(() => hall.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
 }
 
 function app() { return document.getElementById('app'); }
@@ -134,69 +130,73 @@ function app() { return document.getElementById('app'); }
 /* ============================================================
    任务大厅
    ============================================================ */
-export async function viewTasks() {
-  const f = { q: '', cat: '', sort: 'new', offset: 0, done: false, total: 0 };
+async function mountHall(root) {
+  if (!root) return;
+  const PAGE = 8;
+  const st = { q: '', cat: '', sort: 'new', offset: 0, done: false };
 
-  app().innerHTML = `
-    <section class="section">
-      <div class="section-head"><h2>任务大厅</h2><span class="muted small" id="count"></span></div>
-      <div class="filters">
-        <input id="f-q" placeholder="搜索标题关键词…">
-        <select id="f-cat">
-          <option value="">全部类型</option>
-          ${CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
-        </select>
-        <select id="f-sort">
-          <option value="new">最新发布</option>
-          <option value="budget">预算从高到低</option>
-          <option value="deadline">截止时间最近</option>
-        </select>
-      </div>
-      <div id="list"></div>
-      <div style="text-align:center;margin-top:22px"><button class="btn btn-ghost" id="more" hidden>加载更多</button></div>
-    </section>`;
+  root.innerHTML = `
+    <div class="filters">
+      <input id="hall-q" placeholder="搜索标题关键词…">
+      <select id="hall-cat">
+        <option value="">全部类型</option>
+        ${CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+      </select>
+      <select id="hall-sort">
+        <option value="new">最新发布</option>
+        <option value="budget">预算从高到低</option>
+        <option value="deadline">截止时间最近</option>
+      </select>
+    </div>
+    <div id="hall-list"></div>
+    <div class="hall-foot"><button class="btn btn-ghost" id="hall-more" hidden>加载更多</button></div>`;
 
-  const listEl = document.getElementById('list');
-  const moreBtn = document.getElementById('more');
-  const countEl = document.getElementById('count');
+  const listEl = root.querySelector('#hall-list');
+  const moreBtn = root.querySelector('#hall-more');
+  const countEl = document.getElementById('hall-count');
 
   async function load(reset) {
-    if (reset) { f.offset = 0; f.done = false; listEl.innerHTML = ''; }
+    if (reset) { st.offset = 0; st.done = false; listEl.innerHTML = ''; }
 
     let q = db.from('tasks')
       .select('*, owner:profiles(nickname, verified, rating)', { count: 'exact' })
       .eq('status', 'open');
-
-    if (f.q) q = q.ilike('title', '%' + f.q + '%');
-    if (f.cat) q = q.eq('category', f.cat);
-    if (f.sort === 'budget') q = q.order('budget_max', { ascending: false, nullsFirst: false });
-    else if (f.sort === 'deadline') q = q.order('deadline', { ascending: true, nullsFirst: false });
+    if (st.q) q = q.ilike('title', '%' + st.q + '%');
+    if (st.cat) q = q.eq('category', st.cat);
+    if (st.sort === 'budget') q = q.order('budget_max', { ascending: false, nullsFirst: false });
+    else if (st.sort === 'deadline') q = q.order('deadline', { ascending: true, nullsFirst: false });
     else q = q.order('created_at', { ascending: false });
 
-    const { data, error, count } = await q.range(f.offset, f.offset + PAGE_SIZE - 1);
+    const { data, error, count } = await q.range(st.offset, st.offset + PAGE - 1);
     if (error) { listEl.innerHTML = empty(zhError(error.message)); return; }
 
-    f.total = count || 0;
-    f.offset += (data || []).length;
-    f.done = (data || []).length < PAGE_SIZE;
-    countEl.textContent = f.total ? '共 ' + f.total + ' 个' : '';
+    st.offset += (data || []).length;
+    st.done = (data || []).length < PAGE;
+    if (countEl) countEl.textContent = count ? '共 ' + count + ' 个任务' : '';
+
+    if (!(data || []).length && st.offset === 0) {
+      listEl.innerHTML = empty('还没有任务。', '<a class="btn btn-primary btn-sm" href="#/publish">发布第一个任务</a>');
+      moreBtn.hidden = true;
+      return;
+    }
 
     const grid = document.createElement('div');
     grid.className = 'task-grid';
-    grid.innerHTML = (data || []).map(taskCard).join('');
+    grid.innerHTML = data.map(taskCard).join('');
     listEl.appendChild(grid);
-
-    if (!listEl.children.length) listEl.innerHTML = empty('没有匹配的任务。');
-    moreBtn.hidden = f.done;
+    moreBtn.hidden = st.done;
   }
 
-  const reload = () => load(true);
-  document.getElementById('f-q').oninput = () => {
-    clearTimeout(f._t);
-    f._t = setTimeout(() => { f.q = document.getElementById('f-q').value.trim(); reload(); }, 280);
+  const qEl = root.querySelector('#hall-q');
+  const catEl = root.querySelector('#hall-cat');
+  const sortEl = root.querySelector('#hall-sort');
+  let timer;
+  qEl.oninput = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { st.q = qEl.value.trim(); load(true); }, 280);
   };
-  document.getElementById('f-cat').onchange = () => { f.cat = document.getElementById('f-cat').value; reload(); };
-  document.getElementById('f-sort').onchange = () => { f.sort = document.getElementById('f-sort').value; reload(); };
+  catEl.onchange = () => { st.cat = catEl.value; load(true); };
+  sortEl.onchange = () => { st.sort = sortEl.value; load(true); };
   moreBtn.onclick = () => load(false);
 
   await load(true);
