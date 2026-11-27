@@ -165,7 +165,7 @@ function app() { return document.getElementById('app'); }
 async function mountHall(root) {
   if (!root) return;
   const PAGE = 8;
-  const st = { q: '', cat: '', sort: 'new', exp: '', offset: 0, done: false };
+  const st = { q: '', cat: '', sort: 'new', scope: 'open', offset: 0, done: false };
 
   root.innerHTML = `
     <div class="filters">
@@ -174,10 +174,12 @@ async function mountHall(root) {
         <option value="">全部类型</option>
         ${CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
       </select>
-      <select id="hall-exp">
-        <option value="">全部时效</option>
+      <select id="hall-scope">
+        <option value="open">在招募中</option>
         <option value="active">未过期</option>
         <option value="expired">已过期</option>
+        <option value="finished">已结束 / 已下架</option>
+        <option value="all">全部任务</option>
       </select>
       <select id="hall-sort">
         <option value="new">最新发布</option>
@@ -185,25 +187,42 @@ async function mountHall(root) {
         <option value="deadline">截止时间最近</option>
       </select>
     </div>
+    <div class="muted small" id="hall-scope-note" style="margin:-16px 0 20px"></div>
     <div id="hall-list"></div>
     <div class="hall-foot"><button class="btn btn-ghost" id="hall-more" hidden>加载更多</button></div>`;
 
   const listEl = root.querySelector('#hall-list');
   const moreBtn = root.querySelector('#hall-more');
   const countEl = document.getElementById('hall-count');
+  const noteEl = root.querySelector('#hall-scope-note');
+
+  const SCOPE_NOTE = {
+    open: '',
+    active: '只显示还在招募、且没有过截止时间（或没填截止时间）的任务。',
+    expired: '截止时间已过的任务，包括当时已经选定或取消的。',
+    finished: '已选定、进行中、已交付、已完成、已取消的任务。别人的这类任务只有发布者、报价方和管理员能看到。',
+    all: '全部状态的任务。受数据库行级权限限制，别人的非公开任务不会出现在这里。'
+  };
 
   async function load(reset) {
     if (reset) { st.offset = 0; st.done = false; listEl.innerHTML = ''; }
+    if (noteEl) noteEl.textContent = SCOPE_NOTE[st.scope] || '';
 
     let q = db.from('tasks')
-      .select('*, owner:profiles(nickname, verified, rating)', { count: 'exact' })
-      .eq('status', 'open');
+      .select('*, owner:profiles(nickname, verified, rating)', { count: 'exact' });
+
+    if (st.scope === 'open') q = q.eq('status', 'open');
+    else if (st.scope === 'active') q = q.eq('status', 'open').or('deadline.is.null,deadline.gte.' + todayStr());
+    else if (st.scope === 'expired') q = q.lt('deadline', todayStr());
+    else if (st.scope === 'finished') q = q.in('status', ['matched', 'in_progress', 'delivered', 'completed', 'cancelled']);
+
     if (st.q) q = q.ilike('title', '%' + st.q + '%');
     if (st.cat) q = q.eq('category', st.cat);
-    if (st.exp === 'expired') q = q.lt('deadline', todayStr());
-    else if (st.exp === 'active') q = q.or('deadline.is.null,deadline.gte.' + todayStr());
     if (st.sort === 'budget') q = q.order('budget_max', { ascending: false, nullsFirst: false });
-    else if (st.sort === 'deadline') q = q.order('deadline', { ascending: true, nullsFirst: false });
+    else if (st.sort === 'deadline') {
+      const asc = st.scope !== 'expired' && st.scope !== 'finished';
+      q = q.order('deadline', { ascending: asc, nullsFirst: false });
+    }
     else q = q.order('created_at', { ascending: false });
 
     const { data, error, count } = await q.range(st.offset, st.offset + PAGE - 1);
@@ -214,7 +233,11 @@ async function mountHall(root) {
     if (countEl) countEl.textContent = count ? '共 ' + count + ' 个任务' : '';
 
     if (!(data || []).length && st.offset === 0) {
-      listEl.innerHTML = empty('还没有任务。', '<a class="btn btn-primary btn-sm" href="#/publish">发布第一个任务</a>');
+      const tip = st.scope === 'open'
+        ? '还没有任务。'
+        : '这个筛选下没有任务。';
+      listEl.innerHTML = empty(tip,
+        st.scope === 'open' ? '<a class="btn btn-primary btn-sm" href="#/publish">发布第一个任务</a>' : '');
       moreBtn.hidden = true;
       return;
     }
@@ -228,7 +251,7 @@ async function mountHall(root) {
 
   const qEl = root.querySelector('#hall-q');
   const catEl = root.querySelector('#hall-cat');
-  const expEl = root.querySelector('#hall-exp');
+  const scopeEl = root.querySelector('#hall-scope');
   const sortEl = root.querySelector('#hall-sort');
   let timer;
   qEl.oninput = () => {
@@ -236,7 +259,15 @@ async function mountHall(root) {
     timer = setTimeout(() => { st.q = qEl.value.trim(); load(true); }, 280);
   };
   catEl.onchange = () => { st.cat = catEl.value; load(true); };
-  expEl.onchange = () => { st.exp = expEl.value; load(true); };
+  scopeEl.onchange = () => {
+    st.scope = scopeEl.value;
+    // 已过期/已结束用「截止时间倒序」更符合查看历史任务的习惯
+    if (st.scope === 'expired' || st.scope === 'finished') {
+      st.sort = 'deadline';
+      sortEl.value = 'deadline';
+    }
+    load(true);
+  };
   sortEl.onchange = () => { st.sort = sortEl.value; load(true); };
   moreBtn.onclick = () => load(false);
 
