@@ -1,5 +1,5 @@
 import { levels, FLOOR, jamCycle } from './game-levels.js';
-export const STEP = 1/120;
+export const STEP = 1/120, CHAIN_WINDOW = 2.1;
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const approach = (v,to,by) => v<to ? Math.min(v+by,to) : Math.max(v-by,to);
 const crossX=(a,b,pad=0)=>a.x+a.w>b.x+pad && a.x<b.x+b.w-pad;
@@ -17,8 +17,8 @@ export function createRun(play = false) {
 function load(s,index) {
   const level=levels[index];
   Object.assign(s,{index,level,age:0,time:level.time,count:0,earned:false,mode:'brief',message:'',death:null,hintTime:0,sceneTime:0,
-    fast:false,locked:false,bolts:[],risks:[],bits:[],
-    p:{x:82,y:FLOOR-44,w:28,h:44,vx:0,vy:0,facing:1,hp:3,grounded:true,ride:-1,coyote:.1,buffer:0,flash:0,coffee:0,shield:0,stapler:false,cool:0,slip:false},
+    fast:false,locked:false,chain:0,chainLeft:0,bolts:[],risks:[],bits:[],
+    p:{x:82,y:FLOOR-44,w:28,h:44,vx:0,vy:0,facing:1,hp:3,grounded:true,ride:-1,coyote:.1,buffer:0,jumpRise:false,flash:0,coffee:0,shield:0,stapler:false,cool:0,slip:false},
     solids:level.solids.map((r,i)=>({...r,id:i,bx:r.x,by:r.y,dx:0,dy:0,used:false})), pages:level.pages.map(r=>({...r,taken:false})),
     enemies:level.enemies.map((r,i)=>({...r,id:i,home:r.x,base:r.y,w:size[r.kind][0],h:size[r.kind][1], y:r.y-size[r.kind][1], active:r.kind!=='ghost',dead:false,stun:0,kick:0,dir:-1})),
     boss:level.boss ? {x:level.boss.x,y:FLOOR-82,w:104,h:82,hp:9,max:9,phase:1,active:false,dead:false,flash:0,clock:1.45,wind:0,burst:0,attack:0,dir:-1,dash:0,vy:0} : null});
@@ -36,7 +36,7 @@ function particles(s,x,y,color,n=7,paper=false){
 function finish(s,won){
   if(s.result)return;
   s.mode=won?'won':'lost';s.sceneTime=0;
-  s.result={score:s.score,level:s.index+1,duration:Math.max(1,Math.round(s.duration)),won};
+  s.result=Object.freeze({score:s.score,level:s.index+1,duration:Math.max(1,Math.round(s.duration)),pages:s.totalPages,certificates:s.certificates,won});
   emit(s,won?'win':'lose');
 }
 function fail(s,why) {
@@ -54,14 +54,17 @@ export function confirm(s){
 function damage(s,source){
   const p=s.p;
   if(s.mode!=='play' || p.flash>0 || p.shield>0)return;
-  p.hp=Math.max(0,p.hp-1);
+  p.hp=Math.max(0,p.hp-1);s.chain=0;s.chainLeft=0;p.jumpRise=false;
   if(p.hp===0){fail(s,'damage');return;}
   p.flash=1.30;p.vy=-300;p.vx=p.x+p.w/2 < source ? -285 : 285;p.grounded=false;p.ride=-1;
   emit(s,'hurt');particles(s,p.x+14,p.y+22,'#ff7285',8);
 }
 function collect(s,r){
-  r.taken=true;s.count++;s.totalPages++;s.score+=25;emit(s,'page');
-  particles(s,r.x,r.y,'#ffd16f',6,true);
+  r.taken=true;s.count++;s.totalPages++;
+  s.chain++;s.chainLeft=CHAIN_WINDOW;
+  const bonus=Math.min(30,(s.chain-1)*10);
+  s.score+=25+bonus;emit(s,'page');
+  particles(s,r.x,r.y,bonus===30?'#fff2ac':'#ffd16f',bonus===30?9:6,true);
   if(!s.earned && s.count>=s.level.bonus){
     s.earned=true;s.certificates++;s.score+=300;
     notice(s,'加分资质证书 +300',3);emit(s,'certificate');
@@ -175,6 +178,7 @@ export function step(s,input={},dt=STEP){
   if(s.time<=0){fail(s,'time');return;}
   if(s.index>=4 && s.time<=30 && !s.fast){s.fast=true;emit(s,'warn');notice(s,'最后 30 秒 · 加快节奏',2);}
   s.hintTime=Math.max(0,s.hintTime-dt);
+  s.chainLeft=Math.max(0,s.chainLeft-dt);if(!s.chainLeft)s.chain=0;
   for(const key of ['flash','shield','coffee','cool'])p[key]=Math.max(0,p[key]-dt);
   for(const r of s.solids){
     const prevX=r.x,prevY=r.y;
@@ -186,8 +190,12 @@ export function step(s,input={},dt=STEP){
   if(input.jump)p.buffer=.14;else p.buffer-=dt;
   if(p.grounded)p.coyote=.1;else p.coyote-=dt;
   if(p.buffer>0 && p.coyote>0){
-    p.vy=-615;p.buffer=0;p.coyote=0;p.grounded=false;p.ride=-1;
+    p.vy=-615;p.jumpRise=true;p.buffer=0;p.coyote=0;p.grounded=false;p.ride=-1;
     emit(s,'jump');particles(s,p.x+10,p.y+22,'#eefaff',8,true);
+  }
+  if(p.jumpRise && (!input.jumpHeld || p.vy>=0)){
+    if(p.vy < -295)p.vy=-295;
+    p.jumpRise=false;
   }
   const dir=Number(!!input.right)-Number(!!input.left);
   p.slip=p.grounded && l.traps.some(r=>r.kind==='spill'&&p.y+p.h>=FLOOR-3&&crossX(p,r));
@@ -216,7 +224,7 @@ export function step(s,input={},dt=STEP){
     if(r.kind==='shred'&&hit(p,{x:r.x+4,y:FLOOR-40,w:r.w-8,h:48})){fail(s,'shred');return;}
     if(r.kind==='jam'){
       const j=jamCycle(s.age,r.phase);
-      if(j.height>2&&j.height<13)emit(s,'print');
+      if(j.height>2&&jamCycle(s.age-dt,r.phase).height<=2&&Math.abs(p.x-(r.x+r.w/2))<280)emit(s,'print');
       if(j.height>11 && hit(p,{x:r.x+7,y:FLOOR-j.height-22,w:r.w-14,h:26}))damage(s,r.x+r.w/2);
     }
   }
@@ -240,7 +248,7 @@ export function step(s,input={},dt=STEP){
       e.y=e.base-e.h-(e.kind==='typo'?20+Math.sin(phase*2)*12:0);
       if(hit(p,e)){
         if(p.vy>=0 && prevBottom<=oldY+8 && crossX(p,e,3)){
-          defeatFoe(s,e);p.y=e.y-p.h-1;p.vy=-404;p.grounded=false;p.ride=-1;
+          defeatFoe(s,e);p.y=e.y-p.h-1;p.vy=-404;p.jumpRise=false;p.grounded=false;p.ride=-1;
         }else if(p.shield>0)defeatFoe(s,e);
         else damage(s,e.x+e.w/2);
       }

@@ -152,6 +152,7 @@ class Query {
     this.op = op;
     this.payload = payload;
     this.filters = [];
+    this._orders = [];
     this.cols = '*';
     this._count = null;
     this._head = false;
@@ -181,7 +182,7 @@ class Query {
   gte(c, v) { this.filters.push([c, 'gte', v]); return this; }
   lte(c, v) { this.filters.push([c, 'lte', v]); return this; }
 
-  order(col, opts) { this._order = { col, ascending: !opts || opts.ascending !== false }; return this; }
+  order(col, opts) { this._orders.push({ col, ascending: opts?.ascending !== false, nullsFirst: opts?.nullsFirst === true }); return this; }
   limit(n) { this._limit = n; return this; }
   range(a, b) { this._range = [a, b]; return this; }
   single() { this._single = 'one'; return this; }
@@ -275,15 +276,16 @@ class Query {
 
     // select
     let list = matched;
-    if (this._order) {
-      const { col, ascending } = this._order;
+    if (this._orders.length) {
       list = [...list].sort((a, b) => {
-        const av = a[col], bv = b[col];
-        if (av == null && bv == null) return 0;
-        if (av == null) return 1;
-        if (bv == null) return -1;
-        if (av === bv) return 0;
-        return (av > bv ? 1 : -1) * (ascending ? 1 : -1);
+        for (const { col, ascending, nullsFirst } of this._orders) {
+          const av = a[col], bv = b[col];
+          if (av === bv || (av == null && bv == null)) continue;
+          if (av == null) return nullsFirst ? -1 : 1;
+          if (bv == null) return nullsFirst ? 1 : -1;
+          return (av > bv ? 1 : -1) * (ascending ? 1 : -1);
+        }
+        return 0;
       });
     }
 

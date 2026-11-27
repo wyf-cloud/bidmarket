@@ -1,19 +1,22 @@
-/* 会员小游戏：场景、排位与局次生命周期。 */
+/* 会员小游戏：投标大厅、排位与局次生命周期。 */
 import { db, state, esc, toast, zhError, currentUid, needLogin } from './lib.js';
 import { startGame } from './game.js';
 import { levels } from './game-levels.js';
+import { keyArt, brandIcon, chapterIcon, motifs, routeBrief } from './game-poster.js';
 
 const app = () => document.getElementById('app');
 let activeGame = null;
-
 export function leaveGame() {
   const previous = activeGame;
   activeGame = null;
   previous?.engine?.stop();
 }
 
-const field = (name) => `<b data-game-value="${name}">—</b>`;
-const metric = (label, name) => `<div><span>${label}</span>${field(name)}</div>`;
+const field = name => `<b data-game-value="${name}">—</b>`;
+const metric = (label,name,icon) => `<div class="game-meter game-meter-${name}"><span aria-hidden="true" class="game-meter-icon">${icon}</span><div><span>${label}</span>${field(name)}</div></div>`;
+const number = n => Number(n).toLocaleString('zh-CN');
+const duration = n => `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
+const slot = n => String(n).padStart(2,'0');
 
 export function viewGame() {
   leaveGame();
@@ -23,81 +26,120 @@ export function viewGame() {
     return;
   }
   app().innerHTML = `
-    <section class="game-section" aria-label="标书员大冒险">
-      <div class="game-cabinet">
-        <header class="game-masthead">
-          <div><p class="game-kicker">截标前夜 <span>／</span> 投标档案 01–06</p><h1>标书员大冒险</h1></div>
-          <div class="game-switches"><button type="button" data-game="sound" aria-pressed="true">声音：开</button><button type="button" data-game="pause" disabled>暂停</button></div>
-        </header>
-        <div class="game-dashboard" role="group" aria-label="游戏状态">
-          <div class="game-stage-label"><span>章节 ${field('chapter')}</span>${field('area')}</div>
-          ${metric('截标倒计时', 'timer')}${metric('收集页码', 'pages')}${metric('生命', 'health')}${metric('得分', 'score')}
-        </div>
-        <div class="game-scene" tabindex="0" role="region" aria-label="游戏场景" aria-describedby="game-keys">
-          <canvas id="game-canvas" width="960" height="540">标书员大冒险横版游戏画面</canvas>
-          <div class="game-hint" data-game="status" role="status" hidden></div>
-          <div class="game-boss" data-game="boss" hidden>${field('boss')}<div aria-hidden="true"><i data-game-value="bossBar"></i></div></div>
-          <div class="game-overlay" data-game="overlay">
-            <div class="game-docket">
-              <p class="game-docket-tag" data-game-value="tag"></p>
-              <h2 data-game-value="title"></h2>
-              <p class="game-docket-copy" data-game-value="copy"></p>
-              <div class="game-docket-action"><button type="button" data-game="play" data-game-value="buttonHint">开始</button><span data-game-value="shortcut"></span></div>
-            </div>
+  <section class="game-section" aria-label="标书员大冒险">
+    <div class="game-cabinet" data-game-mode="ready">
+      <header class="game-masthead">
+        <div class="game-brand">${brandIcon}<div><strong>标书员大冒险</strong><span>截标前夜</span></div></div>
+        <div class="game-switches"><button type="button" data-game="sound" aria-pressed="true">声音：开</button><button type="button" data-game="pause" disabled>暂停</button></div>
+      </header>
+      <div class="game-dashboard" role="group" aria-label="游戏状态">
+        <div class="game-stage-label"><span>章节 ${field('chapter')}</span>${field('area')}</div>
+        ${metric('截标倒计时','timer','◴')}${metric('收集页码','pages','▤')}${metric('生命','health','')}${metric('得分','score','✦')}
+      </div>
+      <div class="game-scene" tabindex="0" role="region" aria-label="游戏场景" aria-describedby="game-keys">
+        <canvas id="game-canvas" width="960" height="540">标书员大冒险横版游戏画面</canvas>
+        <div class="game-cover">${keyArt}<div class="game-cover-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="game-cover-mark" aria-hidden="true">第 01–06 章 <i></i> 夜间交付档案</div></div>
+        <div class="game-hint" data-game="status" role="status" hidden></div>
+        <div class="game-boss" data-game="boss" hidden>${field('boss')}<div aria-hidden="true"><i data-game-value="bossBar"></i></div></div>
+        <div class="game-overlay" data-game="overlay">
+          <div class="game-docket">
+            <p class="game-docket-tag" data-game-value="tag"></p>
+            <h1 data-game-value="title"></h1>
+            <p class="game-docket-copy" data-game-value="copy"></p>
+            <div class="game-result-stats" data-game="stats" hidden>${metric('本局得分','endScore','')}${metric('收集页码','endPages','')}${metric('资质证书','endCert','')}${metric('用时','endTime','')}</div>
+            <p class="game-submit-status" data-game="submission" role="status" hidden></p>
+            <div class="game-docket-action"><button type="button" data-game="play" data-game-value="buttonHint">开始</button><span data-game-value="shortcut"></span></div>
+            <button class="game-text-button" type="button" data-game-board-jump>查看投标排行榜 <span aria-hidden="true">↘</span></button>
           </div>
         </div>
-        <div class="game-readout"><span>资质证书 ${field('bonus')}</span><span>道具 ${field('gear')}</span></div>
-        <div class="game-touch" role="group" aria-label="触屏操作">
-          <div><button type="button" data-game-control="left" aria-label="左移">←</button><button type="button" data-game-control="right" aria-label="右移">→</button></div>
-          <div><button type="button" data-game-control="fire">发射</button><button type="button" data-game-control="jump">跳跃</button></div>
-        </div>
-        <p class="game-keys" id="game-keys"><kbd>←</kbd> <kbd>→</kbd> 或 <kbd>A</kbd> <kbd>D</kbd> 移动 <span>·</span> <kbd>空格</kbd> 或 <kbd>↑</kbd> 跳跃 <span>·</span> <kbd>X</kbd> 发射 <span>·</span> <kbd>P</kbd> 暂停 / 继续</p>
-        <ol class="game-itinerary" aria-label="六章路线">
-          ${levels.map((level, i) => `<li data-game-level><span>${String(i+1).padStart(2,'0')} / ${esc(level.chapter)}</span><b>${esc(level.name)}</b></li>`).join('')}
-        </ol>
       </div>
-      <div class="game-rows">
-        <section class="panel"><h2>投标排行榜</h2><p class="sub">每局结束记录一次成绩，展示得分前 20 名。</p><div data-game-board aria-live="polite"><div class="empty">加载中…</div></div></section>
-        <section class="panel game-brief"><h2>小张的投标清单</h2><ol>
-          <li>收齐本章要求的页码，抵达校对旗。多收页码可拿加分资质证书。</li>
-          <li>从下方顶道具砖：咖啡加速、U 盘护盾、订书机发射钉书针。</li>
-          <li>最后一章多收页码削弱废标风险兽，清除风险后再到窗口交标。</li>
-        </ol></section>
+      <div class="game-readout"><span>资质证书 ${field('bonus')}</span><span>道具 ${field('gear')}</span><span>速递连页 ${field('chain')}</span><div aria-hidden="true" class="game-progress"><i data-game-value="progress"></i></div></div>
+      <div class="game-touch" role="group" aria-label="触屏操作">
+        <div><button type="button" data-game-control="left" aria-label="左移">←</button><button type="button" data-game-control="right" aria-label="右移">→</button></div>
+        <div><button type="button" data-game-control="fire">发射</button><button type="button" data-game-control="jump">跳跃</button></div>
       </div>
-    </section>`;
-  const session = { board: app().querySelector('[data-game-board]'), uid: currentUid(), revision: 0 };
-  session.engine = startGame(document.getElementById('game-canvas'), { onFinish: async (result) => {
+      <p class="game-keys" id="game-keys"><span><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 移动</span><span><kbd>空格</kbd> 跳跃</span><span><kbd>X</kbd> 发射</span><span><kbd>P</kbd> 暂停</span></p>
+      <section class="game-route" aria-label="六章路线"><div><h2>交付路线</h2><span>06 个办公区域</span></div>
+        <ol class="game-itinerary">${levels.map((level,i)=>`<li data-game-level class="route-${motifs[i]}"><span class="route-number">${slot(i+1)}</span>${chapterIcon(i)}<b>${esc(level.name)}</b><small>${routeBrief[i]}</small></li>`).join('')}</ol>
+      </section>
+    </div>
+    <div class="game-rows">
+      <section class="game-board" aria-labelledby="game-board-heading">
+        <header class="game-board-heading"><div><p>交付档案</p><h2 id="game-board-heading" tabindex="-1">投标排行榜</h2></div><div class="game-board-tabs" role="group" aria-label="榜单范围"><button type="button" data-board-scope="all" aria-pressed="true">全站</button><button type="button" data-board-scope="mine" aria-pressed="false">我的成绩</button></div></header>
+        <p class="game-board-rule">最高 20 笔成绩 · 同分时先比较章节，再比较用时</p>
+        <div data-game-board aria-live="polite"><div class="empty">正在读取成绩…</div></div>
+      </section>
+      <aside class="game-brief" aria-label="速递手册"><span aria-hidden="true" class="brief-index">FIELD NOTES / 01</span><h2>速递手册</h2><dl>
+        <div><dt>连页有加成</dt><dd>连续捡页、不中断，最多每页额外 +30 分。受伤或间隔过久会断掉连页。</dd></div>
+        <div><dt>稳走还是抄近路？</dt><dd>按住跳得更高，点按越过低障。上层文件柜藏着更多页码和加分资质。</dd></div>
+        <div><dt>顶砖补给</dt><dd>咖啡加速、U 盘护盾、订书机击退幽灵。末章多收页码还能削弱废标风险兽。</dd></div>
+      </dl></aside>
+    </div>
+  </section>`;
+  const session = { board:app().querySelector('[data-game-board]'), uid:currentUid(), revision:0, scope:'all' };
+  const submission = app().querySelector('[data-game="submission"]');
+  const showSubmission = (text,tone) => { submission.textContent=text; submission.dataset.state=tone; submission.hidden=false; };
+  app().querySelector('[data-game-board-jump]').addEventListener('click',()=>{
+    app().querySelector('#game-board-heading').focus();
+  });
+  for (const button of app().querySelectorAll('[data-board-scope]')) button.addEventListener('click',()=>{
+    if(session.scope===button.dataset.boardScope)return;
+    session.scope=button.dataset.boardScope;
+    for(const tab of app().querySelectorAll('[data-board-scope]')) tab.setAttribute('aria-pressed',String(tab===button));
+    void loadBoard(session);
+  });
+  session.board.addEventListener('click',e=>{if(e.target.closest('[data-board-retry]'))void loadBoard(session);});
+  session.engine = startGame(document.getElementById('game-canvas'), { onFinish:async (result, isLatest)=>{
     if (!isCurrent(session)) return;
-    const { error } = await db.from('game_scores').insert({
-      user_id: session.uid, score: result.score, level: result.level, duration_sec: result.duration
-    });
-    if (!isCurrent(session)) return;
-    if (error) toast(`成绩未记录：${zhError(error.message)}`, 'error');
-    else { toast(`成绩已记录：${result.score} 分`); await loadBoard(session); }
-  } });
-  activeGame = session;
+    showSubmission('正在登记成绩…','pending');
+    try {
+      const { error } = await db.from('game_scores').insert({user_id:session.uid,score:result.score,level:result.level,duration_sec:result.duration});
+      if(!isCurrent(session))return;
+      if(error) throw error;
+      if(isLatest())showSubmission('成绩已登记至排行榜','saved');
+      void loadBoard(session);
+    }catch(error){
+      if(!isCurrent(session)||!isLatest())return;
+      showSubmission('成绩登记未获确认 · 本局不会重复提交','error');
+      toast(`成绩登记失败：${zhError(error.message)}`, 'error');
+    }
+  }});
+  activeGame=session;
   void loadBoard(session);
 }
 
 function isCurrent(session) {
   return activeGame === session && session.board.isConnected && currentUid() === session.uid;
 }
-
+const ranking = query => query.order('score',{ascending:false}).order('level',{ascending:false}).order('duration_sec',{ascending:true}).order('created_at',{ascending:true}).order('id',{ascending:true});
+const playerName = r => r.user?.nickname || '匿名标书员';
+const row = (r,i,mine) => `<tr class="lb-row"${r.user_id===mine?' data-self':''}><td class="lb-rank">${slot(i+1)}</td><td class="lb-name">${esc(playerName(r))}${r.user_id===mine?'<small>我</small>':''}</td><td>${slot(r.level)} 章</td><td class="lb-time">${duration(r.duration_sec)}</td><td class="lb-score">${number(r.score)}</td></tr>`;
+function podium(rows,uid){
+  return `<div class="game-podium" aria-label="前三笔成绩">${[1,0,2].map(i=>{
+    const r=rows[i];
+    return `<div class="game-podium-seat" data-medal="${i+1}"${r?'':' data-vacant'}><span>${['首席','次席','三席'][i]} <i>${slot(i+1)}</i></span><b>${r?esc(playerName(r)):'等待交付'}${r?.user_id===uid?' <small>我</small>':''}</b><strong>${r?number(r.score):'—'}</strong></div>`;
+  }).join('')}</div>`;
+}
 async function loadBoard(session) {
-  const { board, uid } = session;
-  const revision = ++session.revision;
+  const { board, uid, scope } = session;
+  const revision=++session.revision;
+  board.setAttribute('aria-busy','true');
+  board.innerHTML='<div class="empty">正在读取成绩…</div>';
   try {
-    const [top, mine] = await Promise.all([
-      db.from('game_scores').select('score, level, user:profiles(nickname)').order('score', { ascending: false }).limit(20),
-      db.from('game_scores').select('score').eq('user_id', uid).order('score', { ascending: false }).limit(1)
+    const top=ranking(db.from('game_scores').select('id,user_id,score,level,duration_sec,created_at,user:profiles(nickname)'));
+    const [scores,mine]=await Promise.all([
+      (scope==='mine'?top.eq('user_id',uid):top).limit(20),
+      ranking(db.from('game_scores').select('score,level,duration_sec').eq('user_id',uid)).limit(1)
     ]);
-    if (!isCurrent(session) || revision !== session.revision) return;
-    if (top.error) { board.textContent = zhError(top.error.message); return; }
-    const rows = top.data || [], best = mine.data?.[0];
-    board.innerHTML = `
-      ${best ? `<div class="lb-row lb-personal"><span class="lb-rank top">我</span><span class="lb-name">个人最好成绩</span><span class="lb-score">${esc(String(best.score))} 分</span></div>` : ''}
-      ${rows.length ? rows.map((r, i) => `<div class="lb-row"><span class="lb-rank ${i < 3 ? 'top' : ''}">${['金','银','铜'][i] || i+1}</span><span class="lb-name">${esc(r.user?.nickname || '玩家')}</span><span class="muted small">第 ${esc(String(r.level))} 关</span><span class="lb-score">${esc(String(r.score))} 分</span></div>`).join('') : '<div class="empty">还没有成绩，来打第一局。</div>'}`;
-  } catch (error) {
-    if (isCurrent(session) && revision === session.revision) board.textContent = '暂时读取不到排行榜，请稍后再试。';
+    if(!isCurrent(session)||revision!==session.revision)return;
+    if(scores.error)throw scores.error;
+    const rows=scores.data||[],best=mine.data?.[0];
+    board.innerHTML=`
+      <div class="lb-row lb-personal"><span>个人最好成绩</span><strong>${best?number(best.score):'—'}</strong><span>${best?`第 ${best.level} 章 / ${duration(best.duration_sec)}`:mine.error?'暂未读取':'完成一局后更新'}</span></div>
+      ${rows.length?`${scope==='all'?podium(rows,uid):''}<table class="game-score-table"><thead><tr><th scope="col">${scope==='all'?'排名':'顺序'}</th><th scope="col">标书员</th><th scope="col">章节</th><th scope="col">用时</th><th scope="col">得分</th></tr></thead><tbody>${rows.map((r,i)=>row(r,i,uid)).join('')}</tbody></table>`:'<div class="empty">还没有成绩，完成一局就能留下第一份交付记录。</div>'}`;
+  } catch {
+    if(isCurrent(session)&&revision===session.revision)board.innerHTML='<div class="empty">成绩暂未加载。 <button type="button" data-board-retry>重新加载</button></div>';
+  } finally {
+    if(isCurrent(session)&&revision===session.revision)board.removeAttribute('aria-busy');
   }
 }

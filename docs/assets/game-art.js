@@ -216,14 +216,6 @@ function goal(c,s){
 function sign(c,x,label,p){
   const w=Math.min(205,label.length*12+22);rect(c,x+10,414,4,57,p.night);rect(c,x,405,w,24,'#183653');rect(c,x+2,407,w-4,20,'#ecf9ff');text(c,label,x+8,417,11,colors.ink,800);
 }
-function poster(c,s,vw,t){
-  const x=Math.round(vw*.75),y=379;
-  c.save();c.translate(x-140,y-100);c.scale(2.05,2.05);
-  rect(c,22,87,132,10,'#244c6f30');rect(c,37,85,96,4,'#244c6f24');
-  for(let i=0;i<6;i++){const a=(t*.55+i*.17)%1;page(c,37+i*16,22+Math.sin(a*6.28+i)*13,t);}
-  c.save();c.translate(21,-10);player(c,{x:57,y:48,w:28,h:44,vx:40,facing:1,grounded:false,stapler:false,flash:0,shield:0},t);c.restore();
-  c.restore();
-}
 export function paint(c,s,vw,cam,t,reduced=false){
   const p=palettes[s.index];
   scenery(c,s,cam,vw);
@@ -257,7 +249,6 @@ export function paint(c,s,vw,cam,t,reduced=false){
     const light=c.createRadialGradient(s.p.x+14-cam,s.p.y+16,28,s.p.x+14-cam,s.p.y+16,350);
     light.addColorStop(0,'#08132700');light.addColorStop(1,`rgba(8,19,39,${dim})`);c.fillStyle=light;c.fillRect(0,0,vw,HEIGHT);
   }
-  if(s.mode==='ready')poster(c,s,vw,reduced?0:t);
   if(s.mode==='won'&&!reduced){
     const colors=['#84e2ef','#f8ce72','#fff8e8','#fc9ca7'];
     for(let i=0;i<86;i++){

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createRun, step, confirm, drain, STEP } from '../docs/assets/game-core.js';
+import { createRun, step, confirm, drain, STEP, CHAIN_WINDOW } from '../docs/assets/game-core.js';
 import { FLOOR, jamCycle, levels } from '../docs/assets/game-levels.js';
 
 // The walkthrough uses normal player inputs. Targeted edge cases also set up collisions.
@@ -32,8 +32,8 @@ function driver(s=createRun(true)) {
   }
   function hop(x,opts={},land=()=>true){
     assert.ok(s.p.grounded,`hop from a surface: ${stats(s)}`);
-    steer(typeof x==='function'?x():x,{...opts,jump:true});
-    until(`hop to ${x}`,()=>s.p.grounded&&land(),()=>steer(typeof x==='function'?x():x,opts),320);
+    steer(typeof x==='function'?x():x,{...opts,jump:true,jumpHeld:true});
+    until(`hop to ${x}`,()=>s.p.grounded&&land(),()=>steer(typeof x==='function'?x():x,{...opts,jumpHeld:true}),320);
   }
   function wait(seconds,opts={}){for(let i=0;i<Math.round(seconds/STEP)&&s.mode==='play';i++)tick(opts);}
   function end(){until('chapter checkpoint',()=>s.mode==='clear'||s.mode==='won',()=>tick({right:true,fire:true}));}
@@ -60,7 +60,8 @@ function verifyHealthSettlement(){
     }
   }
   assert.equal(s.death,'damage');
-  assert.deepEqual(s.result,{score,level:1,duration:Math.round(s.duration),won:false});
+  assert.deepEqual(s.result,{score,level:1,duration:Math.max(1,Math.round(s.duration)),pages:s.totalPages,certificates:s.certificates,won:false});
+  assert.ok(Object.isFrozen(s.result));
   const {result,time,duration}=s;
   for(let i=0;i<120;i++)tick({right:true,jump:true,fire:true});
   assert.equal(s.mode,'lost');assert.equal(s.p.hp,0);assert.equal(s.result,result);
@@ -82,7 +83,7 @@ function verifyShredSettlement(initial){
   until('floor route hits first shredder',()=>s.mode==='lost',()=>tick({right:true}));
   assert.equal(s.death,'shred');assert.equal(s.p.hp,0);
   assert.ok(s.count>0 && s.score>initial.score);
-  assert.deepEqual(s.result,{score:s.score,level:3,duration:Math.round(s.duration),won:false});
+  assert.deepEqual(s.result,{score:s.score,level:3,duration:Math.max(1,Math.round(s.duration)),pages:s.totalPages,certificates:s.certificates,won:false});
   assert.equal(events.filter(e=>e==='lose').length,1);
   // A new run requires explicit confirmation and starts at the first chapter.
   confirm(s);
@@ -103,9 +104,42 @@ function verifyLateTimer(initial){
   wait(2);assert.ok(s.fast);assert.equal(events.filter(e=>e==='warn').length,1);
   until('deadline expires',()=>s.mode==='lost',()=>tick(),3900);
   assert.equal(s.time,0);assert.equal(s.death,'time');assert.equal(s.p.hp,initial.p.hp);
-  assert.deepEqual(s.result,{score:s.score,level:s.index+1,duration:Math.round(s.duration),won:false});
+  assert.deepEqual(s.result,{score:s.score,level:s.index+1,duration:Math.max(1,Math.round(s.duration)),pages:s.totalPages,certificates:s.certificates,won:false});
   assert.equal(events.filter(e=>e==='lose').length,1);
   console.log(`Edge: chapter ${s.index+1}, ${rate.toFixed(2)}× clock, one last-30 warning, immediate settlement on timeout.`);
+}
+
+function verifyJumpAndChain(){
+  const height = held => {
+    const {s,tick,until}=driver();
+    const start=s.p.y;
+    tick({jump:true,jumpHeld:true});
+    if(!held)tick({jumpHeld:false});
+    until('jump apex',()=>s.p.vy>=0,()=>tick({jumpHeld:held}));
+    return start-s.p.y;
+  };
+  const low=height(false), high=height(true);
+  assert.ok(low>=25 && high-low>=40,`short ${low}, high ${high}`);
+  const {s,tick,wait}=driver();
+  const foe=s.enemies[0];
+  s.enemies=[];
+  s.pages=[];
+  function page(){s.pages.push({x:s.p.x+s.p.w/2,y:s.p.y+s.p.h/2});tick();}
+  let total=0;
+  for(const [i,points] of [25,35,45,55,55].entries()){
+    page();total+=points;
+    assert.equal(s.score,total);
+    assert.equal(s.chain,i+1);
+    assert.equal(s.chainLeft,CHAIN_WINDOW);
+    wait(.1);
+  }
+  wait(CHAIN_WINDOW+.1);
+  assert.equal(s.chain,0);
+  page();assert.equal(s.score,total+25);assert.equal(s.chain,1);
+  Object.assign(foe,{home:s.p.x+8,base:FLOOR,range:0,y:s.p.y});
+  s.enemies=[foe];tick();assert.equal(s.p.hp,2);
+  assert.equal(s.chain,0);assert.equal(s.chainLeft,0);
+  console.log(`Edge: short jump ${low.toFixed(0)} px vs held jump ${high.toFixed(0)} px; chain bonus caps at +30, breaks on timeout and damage.`);
 }
 
 function walkthrough(){
@@ -125,7 +159,7 @@ function walkthrough(){
   go(257);hop(377);go(420);go(475);go(490);hop(490);assert.ok(s.p.stapler);go(560,{fire:true});hop(659,{fire:true});go(767,{fire:true});hop(945,{fire:true});go(977,{fire:true});hop(1100,{fire:true});go(1141);hop(1141);go(1207,{fire:true});hop(1355,{fire:true});go(1520,{fire:true});
   assert.ok(s.count>=15,stats(s));go(1698);assert.equal(s.boss.max,6);assert.ok(!s.result);
   for(const phase of [1,2,3]){
-    until(`attack pattern ${phase}`,()=>d.attackPhases.has(phase),()=>{if(s.p.grounded){tick({jump:true});}else tick();},560);
+    until(`attack pattern ${phase}`,()=>d.attackPhases.has(phase),()=>{if(s.p.grounded){tick({jump:true,jumpHeld:true});}else tick({jumpHeld:true});},560);
     until(`defeat phase ${phase}`,()=>s.boss.phase>phase||s.boss.dead,()=>{
       const b=s.boss, target=b.x<s.p.x ? Math.max(1675,b.x+155) : Math.max(1665,Math.min(1685,b.x-155));
       if(Math.abs(s.p.x-target)>8)d.steer(target,{fire:true});
@@ -143,4 +177,5 @@ assert.ok(jamCycle(2.66).height>99);
 assert.deepEqual(jamCycle(3.10),{warn:false,height:0});
 verifyHealthSettlement();
 verifyFallSettlement();
+verifyJumpAndChain();
 walkthrough();
