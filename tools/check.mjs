@@ -42,7 +42,8 @@ const NIL = '00000000-0000-0000-0000-000000000000';
 
 const TABLES = [
   'profiles', 'profile_contacts', 'tasks', 'bids',
-  'messages', 'reviews', 'files', 'notifications', 'reports'
+  'messages', 'reviews', 'files', 'notifications', 'reports',
+  'job_posts', 'resumes', 'job_applications', 'application_messages', 'application_notes'
 ];
 
 const RPCS = [
@@ -50,7 +51,12 @@ const RPCS = [
   ['mark_delivered', { p_task: NIL }],
   ['confirm_complete', { p_task: NIL }],
   ['cancel_task', { p_task: NIL }],
-  ['submit_review', { p_task: NIL, p_score: 5, p_body: 'health-check' }]
+  ['submit_review', { p_task: NIL, p_score: 5, p_body: 'health-check' }],
+  ['approve_job', { p_job: NIL }],
+  ['reject_job', { p_job: NIL, p_note: '' }],
+  ['apply_job', { p_job: NIL, p_cover: '' }],
+  ['job_app_set_status', { p_app: NIL, p_status: 'viewed' }],
+  ['close_job', { p_job: NIL }]
 ];
 
 const results = [];

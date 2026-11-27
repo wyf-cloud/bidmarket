@@ -7,7 +7,7 @@ import {
   toast, zhError, currentUid, needLogin, go, loadSiteCopy, isExpired, todayStr
 } from './lib.js';
 import {
-  taskCard, empty, openDialog, reportDialog, closeDialog, confirmDialog
+  taskCard, jobCard, empty, openDialog, reportDialog, closeDialog, confirmDialog
 } from './ui.js';
 import { CONTENT } from './content.js';
 import { typewriter, initReveal } from './motion.js';
@@ -77,6 +77,14 @@ export async function viewHome(opts = {}) {
       <div id="hall-root"></div>
     </section>
 
+    <section class="section" id="home-jobs-section" data-reveal>
+      <div class="section-head">
+        <h2>在招岗位</h2>
+        <a href="#/jobs">全部岗位 →</a>
+      </div>
+      <div id="home-jobs"></div>
+    </section>
+
     <section class="section" data-reveal>
       <div class="section-head"><h2>三条承诺</h2></div>
       <div class="guarantee-grid">
@@ -118,10 +126,34 @@ export async function viewHome(opts = {}) {
   initReveal(app());
 
   await mountHall(document.getElementById('hall-root'));
+  await mountHomeJobs(document.getElementById('home-jobs'));
 
   if (opts.focusHall) {
     const hall = document.getElementById('hall');
     if (hall) setTimeout(() => hall.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
+}
+
+/* 首页「在招岗位」：没有岗位时整块隐藏，不占位 */
+async function mountHomeJobs(root) {
+  if (!root) return;
+  try {
+    const { data } = await db.from('job_posts')
+      .select('*, employer:profiles(nickname, company, verified)')
+      .eq('status', 'open')
+      .gte('expires_at', todayStr())
+      .order('created_at', { ascending: false })
+      .limit(4);
+    const rows = data || [];
+    if (!rows.length) {
+      const sec = document.getElementById('home-jobs-section');
+      if (sec) sec.remove();
+      return;
+    }
+    root.innerHTML = `<div class="task-grid">${rows.map(j => jobCard(j)).join('')}</div>`;
+  } catch {
+    const sec = document.getElementById('home-jobs-section');
+    if (sec) sec.remove();
   }
 }
 

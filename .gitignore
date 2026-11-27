@@ -11,5 +11,14 @@ desktop.ini
 node_modules/
 *.log
 
+# 本地临时文件（截图、测试依赖、浏览器配置）
+.tmp/
+.verify/
+
+# 本地资料，不入公开仓库（含内部审计与安全分析）
+项目分析报告.md
+项目说明.docx
+招聘模块规划.md
+设计稿/
 # 注意：docs/assets/config.js 要提交
 # 它只含 URL 和 anon public key（公开密钥），真正的 service_role key 绝不能写进前端

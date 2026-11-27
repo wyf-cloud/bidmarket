@@ -3,7 +3,7 @@
    ============================================================ */
 import {
   db, state, esc, toast, zhError, currentUid, needLogin, loadProfile,
-  dateText, fullTime, TASK_STATUS, stars
+  dateText, fullTime, TASK_STATUS, JOB_STATUS, salaryFull, stars
 } from './lib.js';
 import { empty, renderHeader, openDialog, confirmDialog, refreshTicker } from './ui.js';
 import { DEFAULT_COPY } from './content.js';
@@ -27,10 +27,12 @@ export async function viewAdmin() {
     <section class="section">
       <div class="section-head"><h2>管理后台</h2></div>
       <div class="tabs">
-        <button data-atab="pending" class="${tab === 'pending' ? 'active' : ''}">待审核</button>
+        <button data-atab="pending" class="${tab === 'pending' ? 'active' : ''}">待审核任务</button>
+        <button data-atab="pending-jobs" class="${tab === 'pending-jobs' ? 'active' : ''}">岗位审核</button>
         <button data-atab="overview" class="${tab === 'overview' ? 'active' : ''}">概览</button>
         <button data-atab="users" class="${tab === 'users' ? 'active' : ''}">用户</button>
         <button data-atab="tasks" class="${tab === 'tasks' ? 'active' : ''}">任务</button>
+        <button data-atab="jobs" class="${tab === 'jobs' ? 'active' : ''}">岗位</button>
         <button data-atab="reports" class="${tab === 'reports' ? 'active' : ''}">举报</button>
         <button data-atab="settings" class="${tab === 'settings' ? 'active' : ''}">设置</button>
       </div>
@@ -45,6 +47,8 @@ export async function viewAdmin() {
 
   const body = document.getElementById('admin-body');
   if (tab === 'pending') await renderPending(body);
+  else if (tab === 'pending-jobs') await renderPendingJobs(body);
+  else if (tab === 'jobs') await renderJobs(body);
   else if (tab === 'users') await renderUsers(body);
   else if (tab === 'tasks') await renderTasks(body);
   else if (tab === 'reports') await renderReports(body);
@@ -120,30 +124,153 @@ async function renderPending(body) {
   });
 }
 
+/* ---------- 岗位审核 ---------- */
+async function renderPendingJobs(body) {
+  const { data, error } = await db.from('job_posts')
+    .select('*, employer:profiles(nickname, company)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) { body.innerHTML = empty(zhError(error.message)); return; }
+  const jobs = data || [];
+
+  if (!jobs.length) {
+    body.innerHTML = empty('没有待审核的岗位。');
+    return;
+  }
+
+  body.innerHTML = `<div class="panel">
+    <h2>待审核岗位（${jobs.length}）</h2>
+    <p class="sub">通过后立刻出现在招聘大厅；驳回后发布者会收到通知，可修改后重新提交。</p>
+    <table class="admin-table">
+      <thead><tr><th>岗位</th><th>招聘方</th><th>薪资</th><th>提交时间</th><th>操作</th></tr></thead>
+      <tbody>${jobs.map(j => `<tr>
+        <td><a href="#/job/${esc(j.id)}">${esc(j.title)}</a>
+          <div class="muted small">${esc(j.category)} · ${esc(j.city)}</div></td>
+        <td>${esc((j.employer && (j.employer.company || j.employer.nickname)) || '—')}</td>
+        <td class="muted small">${esc(salaryFull(j))}</td>
+        <td class="muted small">${dateText(j.created_at)}</td>
+        <td class="row-actions">
+          <button class="btn btn-primary btn-sm" data-approve-job="${esc(j.id)}">通过</button>
+          <button class="btn btn-ghost btn-sm" data-reject-job="${esc(j.id)}">驳回</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+
+  body.querySelectorAll('[data-approve-job]').forEach(btn => {
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const { error: e } = await db.rpc('approve_job', { p_job: btn.dataset.approveJob });
+      if (e) { btn.disabled = false; toast(zhError(e.message), 'error'); return; }
+      toast('已通过，岗位已上线');
+      await viewAdmin();
+    };
+  });
+
+  body.querySelectorAll('[data-reject-job]').forEach(btn => {
+    btn.onclick = () => {
+      openDialog('驳回岗位', `
+        <div class="field">
+          <label>驳回原因（可选，会显示给发布者）</label>
+          <textarea name="note" maxlength="200" placeholder="例如：薪资区间异常，请补充具体职责与任职要求"></textarea>
+        </div>`, {
+        submitText: '确认驳回',
+        danger: true,
+        onSubmit: async (fd) => {
+          const { error: e } = await db.rpc('reject_job', {
+            p_job: btn.dataset.rejectJob,
+            p_note: String(fd.get('note') || '')
+          });
+          if (e) { toast(zhError(e.message), 'error'); return false; }
+          toast('已驳回');
+          await viewAdmin();
+        }
+      });
+    };
+  });
+}
+
+/* ---------- 岗位管理 ---------- */
+async function renderJobs(body) {
+  const { data, error } = await db.from('job_posts')
+    .select('*, employer:profiles(nickname, company)')
+    .order('created_at', { ascending: false }).limit(200);
+  if (error) { body.innerHTML = empty(zhError(error.message)); return; }
+  const jobs = data || [];
+
+  body.innerHTML = `<div class="panel">
+    <h2>岗位（${jobs.length}）</h2>
+    <p class="sub">删除会同时删掉投递、会话与内部备注，不可恢复；上线中的岗位请先关闭。</p>
+    <table class="admin-table">
+      <thead><tr><th>岗位</th><th>招聘方</th><th>状态</th><th>发布时间</th><th>操作</th></tr></thead>
+      <tbody>${jobs.map(j => `<tr>
+        <td><a href="#/job/${esc(j.id)}">${esc(j.title)}</a>
+          <div class="muted small">${esc(j.category)} · ${esc(j.city)}</div></td>
+        <td>${esc((j.employer && (j.employer.company || j.employer.nickname)) || '—')}</td>
+        <td>${esc(JOB_STATUS[j.status] || j.status)}</td>
+        <td class="muted small">${dateText(j.created_at)}</td>
+        <td class="row-actions">
+          ${(j.status === 'open' || j.status === 'pending')
+            ? `<button class="btn btn-ghost btn-sm" data-close-job="${esc(j.id)}">关闭</button>` : ''}
+          ${(j.status !== 'open')
+            ? `<button class="btn btn-ghost btn-sm" data-del-job="${esc(j.id)}">删除</button>` : ''}
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+
+  body.querySelectorAll('[data-close-job]').forEach(btn => {
+    btn.onclick = async () => {
+      if (!(await confirmDialog('关闭后前台不再展示，也不能再投递。', { okText: '关闭岗位', danger: true }))) return;
+      btn.disabled = true;
+      const { error: e } = await db.rpc('close_job', { p_job: btn.dataset.closeJob });
+      if (e) { btn.disabled = false; toast(zhError(e.message), 'error'); return; }
+      toast('已关闭');
+      await viewAdmin();
+    };
+  });
+
+  body.querySelectorAll('[data-del-job]').forEach(btn => {
+    btn.onclick = async () => {
+      if (!(await confirmDialog('删除会同时删掉该岗位的投递、会话与备注，不可恢复。', { okText: '删除', danger: true }))) return;
+      btn.disabled = true;
+      const { error: e } = await db.from('job_posts').delete().eq('id', btn.dataset.delJob);
+      if (e) { btn.disabled = false; toast(zhError(e.message), 'error'); return; }
+      toast('已删除');
+      await viewAdmin();
+    };
+  });
+}
+
 async function renderOverview(body) {
-  const [u, t, o, r] = await Promise.all([
+  const [u, t, o, r, jo, jp] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
     db.from('tasks').select('id', { count: 'exact', head: true }),
     db.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    db.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open')
+    db.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    db.from('job_posts').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    db.from('job_posts').select('id', { count: 'exact', head: true }).eq('status', 'pending')
   ]);
 
   const stat = (label, value, sub) => `
     <div class="stat"><b>${value}</b><span>${label}</span>${sub ? `<i>${sub}</i>` : ''}</div>`;
 
   body.innerHTML = `
-    <div class="stats">
+    <div class="stats stats-6">
       ${stat('注册用户', u.count || 0)}
       ${stat('任务总数', t.count || 0)}
-      ${stat('待审核', o.count || 0)}
+      ${stat('待审核任务', o.count || 0)}
+      ${stat('在招岗位', jo.count || 0)}
+      ${stat('待审核岗位', jp.count || 0)}
       ${stat('待处理举报', r.count || 0)}
     </div>
     <div class="panel">
       <h2>运营提示</h2>
       <ul class="muted small" style="line-height:1.9;margin:0;padding-left:18px">
-        <li>认证用户会在昵称旁显示“已认证”，建议只给核验过营业执照的服务方认证。</li>
-        <li>举报处理：任务类可下架，用户类可封禁；封禁后无法发任务、报价、发消息。</li>
-        <li>平台不接收文件，任务和沟通全部是文字，涉密资料由双方线下传递。</li>
+        <li>认证用户会在昵称旁显示“已认证”，建议只给核验过营业执照的服务方 / 招聘方认证。</li>
+        <li>岗位审核重点看：公司名是否具体、薪资是否离谱、是否含收费项目或歧视性要求。</li>
+        <li>举报处理：任务或岗位类可下架，用户类可封禁；封禁后无法发任务、报价、投递、发消息。</li>
+        <li>平台不接收文件，任务、简历和沟通全部是文字，涉密资料由双方线下传递。</li>
       </ul>
     </div>`;
 }
@@ -161,6 +288,7 @@ async function renderUsers(body) {
       <thead><tr><th>昵称</th><th>评分</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead>
       <tbody>${users.map(u => `<tr>
         <td>${esc(u.nickname)}${u.is_admin ? ' <span class="chip">管理员</span>' : ''}
+          ${u.company ? `<div class="muted small">${esc(u.company)}</div>` : ''}
           ${u.contacts && (u.contacts.wechat || u.contacts.phone)
             ? `<div class="muted small">${esc(u.contacts.wechat || '')}${u.contacts.wechat && u.contacts.phone ? ' · ' : ''}${esc(u.contacts.phone || '')}</div>`
             : ''}</td>
@@ -253,6 +381,8 @@ async function renderReports(body) {
         <span class="muted small">${esc(r.target_type)} · ${esc(String(r.target_id).slice(0, 8))} · ${fullTime(r.created_at)}</span>
         ${r.detail ? `<div class="muted small">${esc(r.detail)}</div>` : ''}
         ${r.target_type === 'task' ? `<a class="small" href="#/task/${esc(r.target_id)}">查看任务</a>` : ''}
+        ${r.target_type === 'job' ? `<a class="small" href="#/job/${esc(r.target_id)}">查看岗位</a>` : ''}
+        ${r.target_type === 'resume' ? `<a class="small" href="#/resume/${esc(r.target_id)}">查看简历</a>` : ''}
       </div>
       <div class="row-actions">
         <button class="btn btn-ghost btn-sm" data-resolve="${esc(r.id)}" data-status="resolved">处理</button>

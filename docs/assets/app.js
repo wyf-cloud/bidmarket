@@ -13,6 +13,9 @@ import { viewHow } from './views-how.js';
 import { viewHealth } from './views-health.js';
 import { viewTerms, viewPrivacy } from './views-legal.js';
 import { viewGame, leaveGame } from './views-game.js';
+import {
+  viewJobs, viewJob, viewJobForm, viewJobApplications, viewApplication, viewResume, leaveJobs
+} from './views-jobs.js';
 
 const app = () => document.getElementById('app');
 
@@ -27,6 +30,7 @@ function routeInfo() {
 async function render() {
   leaveTask();
   leaveGame();
+  leaveJobs();
   if (!db) { renderSetup(); return; }
 
   const { page, param, param2 } = routeInfo();
@@ -39,6 +43,17 @@ async function render() {
       else await viewTask(param);
     }
     else if (page === 'publish') await viewPublish();
+    else if (page === 'jobs') {
+      if (param === 'new') await viewJobForm();
+      else await viewJobs();
+    }
+    else if (page === 'job') {
+      if (param2 === 'edit') await viewJobForm(param);
+      else if (param2 === 'applications') await viewJobApplications(param);
+      else await viewJob(param);
+    }
+    else if (page === 'application') await viewApplication(param);
+    else if (page === 'resume') await viewResume(param || '');
     else if (page === 'login') viewLogin();
     else if (page === 'register') viewRegister();
     else if (page === 'reset') viewReset();
@@ -97,6 +112,7 @@ function renderDemoBar() {
       <button class="btn btn-sm" data-demo="u1">发布方 · 张工</button>
       <button class="btn btn-sm" data-demo="u2">服务方 · 李工</button>
       <button class="btn btn-sm" data-demo="u3">未认证 · 王工</button>
+      <button class="btn btn-sm" data-demo="u4">招聘方 · 陈经理</button>
       <a class="btn btn-sm" href="#/setup">接入真实数据库</a>
     </span>`;
   document.body.prepend(bar);

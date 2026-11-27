@@ -48,6 +48,28 @@ export const BID_STATUS = {
   submitted: '待选择', accepted: '已中标', rejected: '未中标', withdrawn: '已撤回'
 };
 
+/* ---------- 招聘 ---------- */
+export const JOB_CATEGORIES = [
+  '标书编制', '造价/预算', '招标代理', '工程资料', '商务投标', '其他'
+];
+
+export const JOB_TYPE = {
+  fulltime: '全职', parttime: '兼职', remote: '远程', project: '项目制'
+};
+
+export const JOB_STATUS = {
+  pending: '待审核', open: '招聘中', closed: '已关闭', rejected: '未通过'
+};
+
+export const APP_STATUS = {
+  submitted: '已投递', viewed: '已查看', invited: '邀面试',
+  hired: '已录用', rejected: '不合适', withdrawn: '已撤回'
+};
+
+export const JOB_EXPERIENCE = ['不限', '1 年以内', '1-3 年', '3-5 年', '5 年以上'];
+export const JOB_EDUCATION = ['不限', '大专', '本科', '硕士及以上'];
+export const SALARY_UNIT = { month: '/ 月', day: '/ 天', project: '/ 项目' };
+
 export const STATUS_HINT = {
   pending: '已提交，等待管理员审核。审核通过后会出现在任务大厅。',
   open: '还在招募，等报价。',
@@ -94,6 +116,63 @@ export function isExpired(t) {
   if (!t || !t.deadline) return false;
   return String(t.deadline).slice(0, 10) < todayStr();
 }
+
+/* ---------- 招聘 ---------- */
+export function jobCode(id) {
+  return 'JOB-' + String(id).replace(/-/g, '').slice(0, 6).toUpperCase();
+}
+
+function kNum(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return '面议';
+  if (v < 1000) return String(v);
+  return (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'k';
+}
+
+/** 列表用：12k–18k / 月，或 面议 */
+export function salaryText(j) {
+  if (!j) return '面议';
+  const min = j.salary_min, max = j.salary_max;
+  if (!min && !max) return '面议';
+  if (min && max && min !== max) return kNum(min) + '–' + kNum(max);
+  return kNum(max || min);
+}
+
+/** 详情用：¥12,000 – 18,000 / 月，或 面议 */
+export function salaryFull(j) {
+  if (!j) return '面议';
+  const min = j.salary_min, max = j.salary_max;
+  const unit = SALARY_UNIT[j.salary_unit] || '';
+  if (!min && !max) return '面议';
+  if (min && max && min !== max) {
+    return '¥' + Number(min).toLocaleString('zh-CN') + ' – ' +
+      Number(max).toLocaleString('zh-CN') + ' ' + unit;
+  }
+  return '¥' + Number(max || min).toLocaleString('zh-CN') + ' ' + unit;
+}
+
+/** 招聘有效期已过（当天仍算有效） */
+export function isJobExpired(j) {
+  if (!j || !j.expires_at) return false;
+  return String(j.expires_at).slice(0, 10) < todayStr();
+}
+
+export function employerName(j) {
+  if (!j) return '个人';
+  const e = j.employer || {};
+  return j.company || e.company || e.nickname || '个人';
+}
+
+/** 投递状态 → 复用现有 chip 配色 */
+export function appChipClass(status) {
+  if (status === 'hired') return 'status-open';
+  if (status === 'invited') return 'status-matched';
+  if (status === 'viewed') return 'status-delivered';
+  if (status === 'rejected') return 'status-rejected';
+  if (status === 'withdrawn') return 'status-completed';
+  return 'status-pending';
+}
+
 
 export function timeText(s) {
   if (!s) return '';
@@ -150,6 +229,12 @@ export function zhError(msg = '') {
   if (/row-level security/i.test(m)) return '没有权限执行这个操作';
   if (/new row violates check constraint/i.test(m)) return '内容不符合要求，请检查后重试';
   if (/Failed to fetch|NetworkError/i.test(m)) return '网络异常，请稍后重试';
+  if (/请先完善在线简历/.test(m)) return '请先建一份在线简历再投递';
+  if (/已经投递过/.test(m)) return '你已经投递过这个岗位了';
+  if (/暂不接受重复投递/.test(m)) return '对方已处理过你的投递，暂不能再投';
+  if (/未上线或已关闭/.test(m)) return '该岗位已关闭或还没上线';
+  if (/岗位已过期/.test(m)) return '该岗位已过有效期';
+  if (/先邀面试/.test(m)) return '请先邀面试，再确认录用';
   return m || '操作失败，请重试';
 }
 

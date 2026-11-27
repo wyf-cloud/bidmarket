@@ -1,12 +1,12 @@
-﻿/* ============================================================
+/* ============================================================
    页面：注册 / 登录 / 找回密码 / 我的 / 设置 / 通知
    ============================================================ */
 import {
   db, state, esc, toast, zhError, toEmail, currentUid, loadProfile,
   refreshUnread, needLogin, signOut, dateText, timeText, fullTime,
-  TASK_STATUS, BID_STATUS, money, stars
+  TASK_STATUS, BID_STATUS, APP_STATUS, JOB_STATUS, money, stars, salaryFull, employerName
 } from './lib.js';
-import { taskCard, empty, renderHeader, ratingLine } from './ui.js';
+import { taskCard, jobCard, empty, renderHeader, ratingLine } from './ui.js';
 
 const app = () => document.getElementById('app');
 
@@ -174,19 +174,23 @@ export async function viewMe() {
           ${p.banned ? '<span class="chip danger">已被封禁</span>' : ''}
         </h2>
         <div>
+          <a class="btn btn-ghost btn-sm" href="#/resume">我的简历</a>
           <a class="btn btn-ghost btn-sm" href="#/settings">资料设置</a>
           <a class="btn btn-primary btn-sm" href="#/publish">发布任务</a>
         </div>
       </div>
-      ${p.banned ? '<div class="alert alert-error">账号已被封禁，无法发布任务、报价或发消息。</div>' : ''}
+      ${p.banned ? '<div class="alert alert-error">账号已被封禁，无法发布任务、报价、投递或发消息。</div>' : ''}
       <div class="profile-strip">
         <span>评分 ${ratingLine(p)}</span>
+        ${p.company ? `<span>${esc(p.company)}</span>` : ''}
         <span class="muted small">${esc(p.bio || '还没有填写简介')}</span>
       </div>
       <div class="tabs">
         <button data-tab="published" class="active">我发布的任务</button>
         <button data-tab="bids">我提交的报价</button>
         <button data-tab="taken">我接的单</button>
+        <button data-tab="jobs">我发布的岗位</button>
+        <button data-tab="apps">我的投递</button>
       </div>
       <div id="me-list"><div class="empty">加载中…</div></div>
     </section>`;
@@ -232,13 +236,66 @@ export async function viewMe() {
       </a>`).join('')}</div>`;
   }
 
+  async function loadMyJobs() {
+    const { data, error } = await db.from('job_posts')
+      .select('*, employer:profiles(nickname, company, verified)')
+      .eq('employer_id', uid).order('created_at', { ascending: false });
+    if (error) { listEl.innerHTML = empty(zhError(error.message)); return; }
+    const rows = data || [];
+    if (!rows.length) {
+      listEl.innerHTML = empty('还没发布过岗位。',
+        '<a class="btn btn-primary btn-sm" href="#/jobs/new">发布岗位</a>');
+      return;
+    }
+    let counts = {};
+    const r = await db.from('job_applications').select('job_id').in('job_id', rows.map(j => j.id));
+    (r.data || []).forEach(a => { counts[a.job_id] = (counts[a.job_id] || 0) + 1; });
+    listEl.innerHTML = `<div class="task-grid">${rows.map(j => jobCard(j, { count: counts[j.id] || 0 })).join('')}</div>`;
+  }
+
+  async function loadMyApps() {
+    const { data, error } = await db.from('job_applications').select('*')
+      .eq('applicant_id', uid).order('created_at', { ascending: false });
+    if (error) { listEl.innerHTML = empty(zhError(error.message)); return; }
+    const rows = data || [];
+    if (!rows.length) {
+      listEl.innerHTML = empty('还没投递过岗位。',
+        '<a class="btn btn-ghost btn-sm" href="#/jobs">去招聘大厅</a>');
+      return;
+    }
+    const ids = [...new Set(rows.map(a => a.job_id))];
+    const jr = await db.from('job_posts')
+      .select('*, employer:profiles(nickname, company)').in('id', ids);
+    const jobs = {};
+    (jr.data || []).forEach(j => { jobs[j.id] = j; });
+
+    listEl.innerHTML = `<div class="task-grid">${rows.map(a => {
+      const j = jobs[a.job_id] || {};
+      return `<a class="card" href="#/application/${esc(a.id)}">
+        <div class="task-top">
+          <span class="chip ${a.status === 'hired' ? 'status-open' : a.status === 'invited' ? 'status-matched' : a.status === 'rejected' ? 'status-rejected' : 'status-pending'}">${esc(APP_STATUS[a.status] || a.status)}</span>
+          <span class="chip">${esc(JOB_STATUS[j.status] || '岗位已删除')}</span>
+        </div>
+        <h3>${esc(j.title || '岗位已不可见')}</h3>
+        <p class="muted small">${esc(employerName(j))} · ${esc(j.city || '—')}</p>
+        <div class="task-foot">
+          <strong>${esc(salaryFull(j))}</strong>
+          <span>${esc(dateText(a.created_at))} 投递</span>
+        </div>
+      </a>`;
+    }).join('')}</div>`;
+  }
+
   tabs.forEach(btn => {
     btn.onclick = async () => {
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const tab = btn.dataset.tab;
       if (tab === 'published') await loadPublished();
-      else await loadBids(tab === 'taken');
+      else if (tab === 'bids') await loadBids(false);
+      else if (tab === 'taken') await loadBids(true);
+      else if (tab === 'jobs') await loadMyJobs();
+      else await loadMyApps();
     };
   });
 
@@ -272,6 +329,8 @@ export async function viewSettings() {
         </div>
         <div class="field"><label>微信号（可选，仅自己和管理员可见）</label>
           <input name="wechat" maxlength="40" value="${esc(c.wechat || '')}"></div>
+        <div class="field"><label>公司 / 团队名（可选，发布岗位时展示）</label>
+          <input name="company" maxlength="40" value="${esc(p.company || '')}" placeholder="例如 宏远建设有限公司"></div>
         <div class="field"><label>简介（可选）</label>
           <textarea name="bio" maxlength="300" placeholder="做过哪些类型的标书、擅长行业…">${esc(p.bio || '')}</textarea></div>
         <button class="btn btn-primary" type="submit">保存资料</button>
@@ -306,6 +365,7 @@ export async function viewSettings() {
 
     const { error } = await db.from('profiles').update({
       nickname: String(fd.get('nickname')).trim(),
+      company: String(fd.get('company') || '').trim() || null,
       bio: String(fd.get('bio') || '').trim() || null
     }).eq('id', currentUid());
 
@@ -349,6 +409,13 @@ export async function viewSettings() {
 /* ============================================================
    通知
    ============================================================ */
+function notifHref(n) {
+  if (n.application_id) return '#/application/' + n.application_id;
+  if (n.job_id) return '#/job/' + n.job_id;
+  if (n.task_id) return '#/task/' + n.task_id;
+  return '#/notifications';
+}
+
 export async function viewNotifications() {
   if (!needLogin('请先登录')) return;
 
@@ -364,7 +431,7 @@ export async function viewNotifications() {
         <button class="btn btn-ghost btn-sm" id="read-all">全部标为已读</button>
       </div>
       ${list.length ? `<div class="notice-list">
-        ${list.map(n => `<a class="notice ${n.read_at ? '' : 'unread'}" href="${n.task_id ? '#/task/' + esc(n.task_id) : '#/notifications'}" data-id="${esc(n.id)}">
+        ${list.map(n => `<a class="notice ${n.read_at ? '' : 'unread'}" href="${esc(notifHref(n))}" data-id="${esc(n.id)}">
           <span class="notice-dot"></span>
           <span class="notice-body">${esc(n.body)}</span>
           <span class="muted small">${fullTime(n.created_at)}</span>

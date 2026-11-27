@@ -13,6 +13,7 @@ bidmarket/
 │     ├─ lib.js             # Supabase 客户端、状态、工具
 │     ├─ ui.js              # 顶栏、卡片、弹窗、附件列表
 │     ├─ views-feed.js      # 首页 / 大厅 / 任务详情 / 发布编辑
+│     ├─ views-jobs.js      # 招聘：大厅 / 岗位 / 简历 / 投递 / 面试沟通
 │     ├─ views-auth.js      # 注册登录 / 找回 / 我的 / 设置 / 通知
 │     ├─ views-admin.js     # 管理后台 / 怎么用 / 404
 │     ├─ app.js             # 路由、启动、实时通知
@@ -42,14 +43,21 @@ bidmarket/
 - 站内消息，**Supabase Realtime 实时推送**
 - 完成后互评，评分自动累计到信用分
 
+**招聘**
+- 企业 / 团队发布岗位（全职 / 兼职 / 远程 / 项目制），**审核通过才上线**；改内容自动回到待审核
+- 在线简历（一人一份、纯文字、不接收附件），默认仅投递后可见
+- 投递 / 撤回 / 重新投递；一岗一人一条，被驳回后不再接受重复投递
+- 投递后站内沟通；**邀面试后双方才可见手机号与微信**
+- 招聘方管理投递、写内部备注；求职者在「我的」里查看投递进度
+
 **通知**
 - 新报价、被选定、未中标、新消息、任务状态变化都会写入站内通知
 - 顶栏铃铛未读数，实时刷新
 - 通知中心可逐条已读 / 全部已读
 
 **管理**
-- 概览统计、用户认证 / 封禁、任务下架、举报处理
-- 封禁用户无法发布、报价、发消息（数据库层强制）
+- 概览统计、用户认证 / 封禁、任务下架、岗位审核与下架、举报处理
+- 封禁用户无法发布、报价、投递、发消息（数据库层强制）
 
 ## 本地预览（重要）
 
@@ -70,7 +78,8 @@ bidmarket/
 
 1. **建 Supabase 项目**：<https://supabase.com> → New project。区域选 Singapore 或 Tokyo。
 2. **建表**：Dashboard → SQL Editor，把 `supabase/schema.sql` 整段执行。
-   文件按 v1 → v2 → v3 排列，全部幂等，可以整体重跑。
+   文件按 v1 → v8 排列，全部幂等，可以整体重跑。招聘模块在
+   `supabase/migrations/2026-11-27-recruit.sql`，单独执行一次（v9）。
 3. **关掉邮箱确认**：Authentication → Providers → Email → 关闭 `Confirm email`。
 4. **填配置**：Project Settings → API，把 `Project URL` 和 `anon public` 填进 `docs/assets/config.js`。
 5. **部署**：仓库推到 GitHub → Settings → Pages → 分支 `main`、目录 `/docs`。
@@ -102,7 +111,7 @@ git -c http.proxy= -c https.proxy= -c http.sslBackend=openssl push -u origin mai
 
 部署并填好 `config.js` 后，访问 `#/health`（页脚也有入口）：
 
-- 逐项检查配置、9 张表、5 个数据库函数、存储桶、实时订阅、当前用户资料
+- 逐项检查配置、14 张表、10 个数据库函数、存储桶、实时订阅、当前用户资料
 - 全部通过才算真正接通
 - 还有「写入自检」，会建一条任务再删掉，验证写权限
 - 失败项可以一键复制，直接贴出来排查
@@ -139,19 +148,24 @@ Authentication → SMTP 配置自己的发信服务。
 | 对象 | 谁能读 | 谁能写 |
 |---|---|---|
 | `profiles` | 所有人（不含联系方式） | 本人；管理员可改认证/封禁 |
-| `profile_contacts` | 本人、管理员 | 本人 |
+| `profile_contacts` | 本人、管理员；邀面试/录用关系的对方 | 本人 |
 | `tasks` | 招募中所有人；其余仅发布者与报价方 | 发布者；管理员可删 |
 | `bids` | 接单方看自己；发布者看全部 | 接单方插入、撤回 |
 | `messages` | 仅任务双方 | 仅任务双方 |
 | `reviews` | 仅任务双方 | 只能通过 `submit_review()` |
 | `notifications` | 本人、管理员 | 只能由触发器写入 |
 | `reports` | 举报人、管理员 | 举报人插入；管理员处理 |
+| `job_posts` | 在招的公开；其余仅发布者、投递过的人、管理员 | 发布者；管理员审核/下架 |
+| `resumes` | 本人、管理员、公开简历、投递关系的招聘方 | 只能本人 |
+| `job_applications` | 仅投递双方、管理员 | **只能通过 RPC**（投递/状态流转） |
+| `application_messages` | 仅投递双方、管理员 | 仅投递双方 |
+| `application_notes` | 仅该投递的招聘方、管理员 | 招聘方 |
 
-关键 RPC（`security definer`，内部校验身份）：`accept_bid`、`mark_delivered`、`confirm_complete`、`cancel_task`、`submit_review`。
+关键 RPC（`security definer`，内部校验身份）：`accept_bid`、`mark_delivered`、`confirm_complete`、`cancel_task`、`submit_review`、`apply_job`、`job_app_set_status`、`approve_job`、`reject_job`、`close_job`。
 
 ## 纯文字产品
 
-平台**不接收任何文件**，任务是纯文字描述的：
+平台**不接收任何文件**，任务是纯文字描述的，招聘模块的在线简历也是纯文字填写的：
 
 - 招标文件、图纸、成稿都走线下（微信群 / 邮件 / 网盘），平台只负责撮合和流程
 - 数据库里仍保留 `files` 表与 `attachments` 存储桶，但界面已不再使用，方便以后按需恢复
@@ -182,9 +196,18 @@ Supabase 里 `Confirm email` 没关。
 - Supabase 免费项目**闲置 7 天会暂停**，低流量期要留意。
 - 附件不做病毒扫描；大文件建议先压缩。
 - 通知只写库 + 实时推送，没有短信 / 邮件 / 微信提醒。
+- 招聘模块不做背景调查、不代发工资、不参与劳动合同；岗位信息由发布者负责，平台只做审核与举报处理。
 
 ## 建议的运营节奏
 
 1. 先自己当唯一服务方跑两周，验证有没有人真的发任务。
 2. 有真实询盘后再开放服务方入驻，用 `verified` 做人工审核。
 3. 交易量稳定后再考虑资金托管、抽佣和发票，那时需要公司主体。
+
+## 招聘模块
+
+- 数据库迁移：[supabase/migrations/2026-11-27-recruit.sql](supabase/migrations/2026-11-27-recruit.sql)（v9，执行一次）
+- 界面原型（设计留档，不参与线上导航）：[docs/prototype-recruit.html](docs/prototype-recruit.html)
+- 主要路由：`#/jobs`、`#/job/<id>`、`#/resume`、`#/application/<id>`
+
+招聘模块解决的是**长期用工**：企业发岗位、求职者投简历、投递后站内沟通、邀面试、录用。和任务大厅（一次性交付、按件结算）并列，但数据不混。

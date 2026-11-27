@@ -3,7 +3,8 @@
    ============================================================ */
 import {
   state, db, currentUid, esc, money, budgetText, dateText, sizeText, stars,
-  toast, zhError, signOut, go, downloadFile, isExpired
+  toast, zhError, signOut, go, downloadFile, isExpired,
+  JOB_STATUS, JOB_TYPE, SALARY_UNIT, salaryText, isJobExpired, jobCode, employerName, appChipClass
 } from './lib.js';
 
 export function renderHeader() {
@@ -23,8 +24,9 @@ export function renderHeader() {
     : `<a class="top-link" href="#/login" data-nav="login">登录</a>
        <a class="btn btn-primary btn-sm" href="#/register">注册</a>`;
 
-  // 当前页面高亮
-  const page = (location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0]) || 'home';
+  // 当前页面高亮（招聘子页面统一高亮「招聘」）
+  const rawPage = (location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0]) || 'home';
+  const page = ['job', 'jobs', 'application', 'resume'].includes(rawPage) ? 'jobs' : rawPage;
   document.querySelectorAll('[data-nav]').forEach(el => {
     el.classList.toggle('active', el.dataset.nav === page);
   });
@@ -64,6 +66,42 @@ export function taskCard(t) {
 const TASK_STATUS_LABEL = {
   pending: '待审核', open: '招募中', matched: '已选定', in_progress: '进行中',
   delivered: '已交付', completed: '已完成', cancelled: '已取消', rejected: '未通过'
+};
+
+/** 招聘卡：大厅、首页、我的岗位共用；opts.appStatus / opts.count 可选 */
+export function jobCard(j, opts = {}) {
+  const expired = isJobExpired(j);
+  const appStatus = opts.appStatus;
+  const label = appStatus ? (APP_LABEL[appStatus] || appStatus) : (JOB_STATUS[j.status] || j.status);
+  const chipCls = appStatus ? appChipClass(appStatus) : 'status-' + (j.status || 'open');
+  const unit = SALARY_UNIT[j.salary_unit] || '';
+  const footLeft = opts.count != null
+    ? `<span>${Number(opts.count) || 0} 人投递</span>`
+    : `<span>有效期至 ${esc(dateText(j.expires_at))}</span>`;
+
+  return `<a class="card job-card${expired ? ' is-expired' : ''}" href="#/job/${esc(j.id)}">
+    <div class="task-top">
+      <span class="code">${esc(jobCode(j.id))}</span>
+      <span class="chip ${chipCls}">${esc(label)}</span>
+    </div>
+    <h3>${esc(j.title)}</h3>
+    <div class="job-meta">
+      <span>${esc(employerName(j))}</span><span class="dot">·</span>
+      <span>${esc(j.city)}</span><span class="dot">·</span>
+      <span>${esc(JOB_TYPE[j.employment] || j.employment)}</span><span class="dot">·</span>
+      <span>${esc(j.experience || '不限')}</span>
+    </div>
+    <div class="job-salary">${esc(salaryText(j))}<span>${esc(unit)}</span></div>
+    <div class="task-foot">
+      ${footLeft}
+      ${expired ? '<span class="expired-tag">已过期</span>' : `<span>${esc(dateText(j.created_at))} 发布</span>`}
+    </div>
+  </a>`;
+}
+
+const APP_LABEL = {
+  submitted: '已投递', viewed: '已查看', invited: '邀面试',
+  hired: '已录用', rejected: '不合适', withdrawn: '已撤回'
 };
 
 export function empty(text, actionHtml = '') {

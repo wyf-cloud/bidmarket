@@ -14,17 +14,26 @@ const profiles = [
   {
     id: 'u1', nickname: '张工', email: 'zhang@example.com', role: 'client',
     verified: true, rating: 4.8, bio: '市政与房建项目，常年需要标书外包。',
+    company: '宏远建设有限公司',
     is_admin: true, banned: false, created_at: minsAgo(60 * 24 * 40)
   },
   {
     id: 'u2', nickname: '李工', email: 'li@example.com', role: 'provider',
     verified: true, rating: 4.9, bio: '8 年标书编制，擅长工程类商务标、技术标。',
+    company: null,
     is_admin: false, banned: false, created_at: minsAgo(60 * 24 * 30)
   },
   {
     id: 'u3', nickname: '王工', email: 'wang@example.com', role: 'provider',
     verified: false, rating: 4.5, bio: '货物类、服务类标书，电子标上传。',
+    company: null,
     is_admin: false, banned: false, created_at: minsAgo(60 * 24 * 12)
+  },
+  {
+    id: 'u4', nickname: '陈经理', email: 'chen@example.com', role: 'client',
+    verified: true, rating: 4.7, bio: '中联工程咨询，常年招造价与标书人员。',
+    company: '中联工程咨询',
+    is_admin: false, banned: false, created_at: minsAgo(60 * 24 * 20)
   }
 ];
 
@@ -105,10 +114,118 @@ const reports = [
   { id: 'rp1', reporter_id: 'u3', target_type: 'task', target_id: 't2', reason: '虚假任务', detail: '描述与预算明显不匹配，疑似套方案。', status: 'open', created_at: minsAgo(200) }
 ];
 
+/* ---------- 招聘种子 ---------- */
+const resumes = [
+  {
+    user_id: 'u2', title: '标书编制 · 8 年 · 杭州', category: '标书编制',
+    employment: 'fulltime', city: '杭州', years: 8, education: '本科',
+    salary_min: 12000, salary_max: 16000,
+    skills: '商务标\n技术标\n电子标上传\n广联达\n资格预审',
+    summary: '8 年工程类标书编制经验，独立完成 60 余个项目，熟悉市政、房建、水利的评分办法。',
+    experience: '宏远建设｜标书主管｜2021–2026｜带 3 人小组，负责市政项目商务标与技术标\n中天咨询｜标书专员｜2018–2021｜工程类标书编制与电子标上传',
+    portfolio: '某市政道路改造项目商务标（一正两副，一次通过初审）\n某学校食堂服务项目技术标（含人员配置与食安承诺）',
+    visible: 'applied',
+    created_at: minsAgo(60 * 24 * 10), updated_at: minsAgo(60 * 24 * 3)
+  },
+  {
+    user_id: 'u3', title: '造价员 · 4 年 · 远程', category: '造价/预算',
+    employment: 'remote', city: '远程', years: 4, education: '大专',
+    salary_min: 8000, salary_max: 12000,
+    skills: '广联达\n清单编制\n预算审核',
+    summary: '4 年安装与土建造价经验，可远程做清单编制与预算审核。',
+    experience: '中联咨询｜造价员｜2022–2026｜安装工程清单与预算\n个人接单｜2020–2022｜土建预算编制',
+    portfolio: '某园区安装工程清单编制（含 3000 余条清单项）',
+    visible: 'public',
+    created_at: minsAgo(60 * 24 * 6), updated_at: minsAgo(60 * 24 * 2)
+  }
+];
+
+const job_posts = [
+  {
+    id: 'j1', employer_id: 'u1', title: '标书编制（工程类）', category: '标书编制',
+    employment: 'fulltime', city: '杭州', headcount: 1,
+    salary_min: 12000, salary_max: 18000, salary_unit: 'month',
+    experience: '3-5 年', education: '本科',
+    description: '1. 独立完成市政、房建项目的商务标、技术标编制，按评分办法逐条响应；\n2. 整理资格证明材料、业绩合同、人员证书，完成标书排版与装订；\n3. 配合电子标上传、CA 办理与开标前的答疑澄清；\n4. 与项目部对接，跟进招标文件澄清与补遗。',
+    requirement: '1. 3 年以上工程类标书编制经验，能独立完成一正两副；\n2. 熟悉《招标投标法》与常见评分办法，能识别废标风险点；\n3. 熟练使用 Word、Excel、PDF 排版工具，会电子标平台操作；\n4. 细致、抗压，能接受投标季的短期加班（可调休）。',
+    perks: '五险一金，双休，投标季补贴',
+    status: 'open', expires_at: daysFromNow(20),
+    created_at: minsAgo(60 * 24 * 5), updated_at: minsAgo(60 * 24 * 5)
+  },
+  {
+    id: 'j2', employer_id: 'u4', title: '造价员（兼职 · 远程）', category: '造价/预算',
+    employment: 'parttime', city: '远程', headcount: 2,
+    salary_min: 400, salary_max: 600, salary_unit: 'day',
+    experience: '1-3 年', education: '大专',
+    description: '清单编制与预算审核，远程协作，按项目结算。\n每周投入 2–3 天，时间可协商。',
+    requirement: '熟悉广联达，能独立完成安装或土建清单编制；\n有造价员证优先，能接受线上对账。',
+    perks: '远程，时间灵活',
+    status: 'open', expires_at: daysFromNow(12),
+    created_at: minsAgo(60 * 24 * 2), updated_at: minsAgo(60 * 24 * 2)
+  },
+  {
+    id: 'j3', employer_id: 'u4', title: '工程资料员', category: '工程资料',
+    employment: 'fulltime', city: '苏州', headcount: 1,
+    salary_min: 6000, salary_max: 8000, salary_unit: 'month',
+    experience: '不限', education: '大专',
+    description: '整理竣工资料、备案材料与过程验收记录，配合项目部完成归档。',
+    requirement: '细心、有耐心，会用资料软件；应届生可培养。',
+    perks: '包住，双休',
+    status: 'open', expires_at: daysFromNow(30),
+    created_at: minsAgo(60 * 20), updated_at: minsAgo(60 * 20)
+  },
+  {
+    id: 'j4', employer_id: 'u4', title: '标书助理（应届）', category: '标书编制',
+    employment: 'fulltime', city: '南京', headcount: 1,
+    salary_min: 5000, salary_max: 7000, salary_unit: 'month',
+    experience: '1 年以内', education: '大专',
+    description: '协助标书排版、材料整理与电子标上传，有老师带。',
+    requirement: '应届或 1 年内经验，愿意长期做标书；细心、能加班。',
+    perks: '带薪培训，双休',
+    status: 'pending', expires_at: daysFromNow(30),
+    created_at: minsAgo(180), updated_at: minsAgo(180)
+  }
+];
+
+const job_applications = [
+  {
+    id: 'a1', job_id: 'j1', employer_id: 'u1', applicant_id: 'u2',
+    resume_snapshot: resumes[0], cover_letter: '做过 6 个市政项目的商务标，熟悉杭州交易中心电子标流程，可两周内到岗。',
+    status: 'invited', viewed_at: minsAgo(60 * 24 * 2), created_at: minsAgo(60 * 24 * 2), updated_at: minsAgo(60 * 24)
+  },
+  {
+    id: 'a2', job_id: 'j2', employer_id: 'u4', applicant_id: 'u3',
+    resume_snapshot: resumes[1], cover_letter: '可远程，每周能投入 3 天。',
+    status: 'submitted', viewed_at: null, created_at: minsAgo(60 * 5), updated_at: minsAgo(60 * 5)
+  },
+  {
+    id: 'a3', job_id: 'j1', employer_id: 'u1', applicant_id: 'u3',
+    resume_snapshot: resumes[1], cover_letter: null,
+    status: 'viewed', viewed_at: minsAgo(60 * 20), created_at: minsAgo(60 * 30), updated_at: minsAgo(60 * 20)
+  },
+  {
+    id: 'a4', job_id: 'j3', employer_id: 'u4', applicant_id: 'u2',
+    resume_snapshot: resumes[0], cover_letter: '想转资料方向，可以接受苏州驻场。',
+    status: 'hired', viewed_at: minsAgo(60 * 14), created_at: minsAgo(60 * 16), updated_at: minsAgo(60 * 10)
+  }
+];
+
+const application_messages = [
+  { id: 'am1', application_id: 'a1', sender_id: 'u2', body: '张工您好，我做过 6 个市政项目，想问下这个岗位主要做商务标还是技术标？', created_at: minsAgo(60 * 40) },
+  { id: 'am2', application_id: 'a1', sender_id: 'u1', body: '偏商务标，技术标有模板，偶尔要配合电子标上传。你什么时候能到岗？', created_at: minsAgo(60 * 36) },
+  { id: 'am3', application_id: 'a1', sender_id: 'u2', body: '两周内可以。方便的话约个线上面聊？', created_at: minsAgo(60 * 30) },
+  { id: 'am4', application_id: 'a2', sender_id: 'u3', body: '您好，我每周能投入 3 天，清单和预算都可以做。', created_at: minsAgo(60 * 4) }
+];
+
+const application_notes = [
+  { application_id: 'a1', employer_id: 'u1', body: '11-28 线上面聊，重点问电子标与杭州交易中心流程。', updated_at: minsAgo(60 * 20) }
+];
+
 /* ---------- 内存 store ---------- */
 const store = {
   profiles, profile_contacts: contacts, tasks, bids, messages,
-  reviews, files, notifications, reports, game_scores: []
+  reviews, files, notifications, reports, game_scores: [],
+  job_posts, resumes, job_applications, application_messages, application_notes
 };
 
 let currentUserId = 'u1';
@@ -122,6 +239,24 @@ const sessionFor = (uid) => {
 
 /* ---------- 查询构建器 ---------- */
 const clone = (v) => JSON.parse(JSON.stringify(v));
+
+function matchOrCond(row, part) {
+  const m = String(part || '').trim().match(/^([a-zA-Z0-9_]+)\.(is|eq|neq|gte|lte|gt|lt|ilike)\.(.*)$/);
+  if (!m) return false;
+  const [, col, op, val] = m;
+  const cur = row[col];
+  if (op === 'is') return val === 'null' ? (cur === null || cur === undefined) : cur === val;
+  if (op === 'eq') return cur === val;
+  if (op === 'neq') return cur !== val;
+  if (op === 'ilike') {
+    return String(cur || '').toLowerCase().includes(String(val).replace(/%/g, '').toLowerCase());
+  }
+  if (op === 'gte') return cur >= val;
+  if (op === 'lte') return cur <= val;
+  if (op === 'gt') return cur > val;
+  if (op === 'lt') return cur < val;
+  return false;
+}
 
 function decorate(table, row, cols) {
   if (!row) return row;
@@ -143,6 +278,20 @@ function decorate(table, row, cols) {
     const profile = profiles.find(p => p.id === row.user_id);
     out.user = profile ? { nickname: profile.nickname } : null;
   }
+  if (table === 'job_posts' && /employer\s*:/.test(cols)) {
+    out.employer = profiles.find(p => p.id === row.employer_id) || null;
+  }
+  if (table === 'job_applications') {
+    if (/applicant\s*:/.test(cols)) out.applicant = profiles.find(p => p.id === row.applicant_id) || null;
+    if (/employer\s*:/.test(cols)) out.employer = profiles.find(p => p.id === row.employer_id) || null;
+    if (/\bjob\s*:/.test(cols)) out.job = job_posts.find(j => j.id === row.job_id) || null;
+  }
+  if (table === 'resumes' && /\buser\s*:/.test(cols)) {
+    out.user = profiles.find(p => p.id === row.user_id) || null;
+  }
+  if (table === 'application_messages' && /sender\s*:/.test(cols)) {
+    out.sender = profiles.find(p => p.id === row.sender_id) || null;
+  }
   return out;
 }
 
@@ -160,6 +309,7 @@ class Query {
     this._limit = null;
     this._range = null;
     this._single = null;
+    this._or = null;
   }
 
   select(cols = '*', opts) {
@@ -181,6 +331,9 @@ class Query {
   ilike(c, v) { this.filters.push([c, 'ilike', v]); return this; }
   gte(c, v) { this.filters.push([c, 'gte', v]); return this; }
   lte(c, v) { this.filters.push([c, 'lte', v]); return this; }
+  gt(c, v) { this.filters.push([c, 'gt', v]); return this; }
+  lt(c, v) { this.filters.push([c, 'lt', v]); return this; }
+  or(expr) { this._or = String(expr || ''); return this; }
 
   order(col, opts) { this._orders.push({ col, ascending: opts?.ascending !== false, nullsFirst: opts?.nullsFirst === true }); return this; }
   limit(n) { this._limit = n; return this; }
@@ -189,7 +342,7 @@ class Query {
   maybeSingle() { this._single = 'maybe'; return this; }
 
   _match(row) {
-    return this.filters.every(([col, op, val]) => {
+    const base = this.filters.every(([col, op, val]) => {
       const cur = row[col];
       if (op === 'eq') return cur === val;
       if (op === 'neq') return cur !== val;
@@ -201,8 +354,13 @@ class Query {
       }
       if (op === 'gte') return cur >= val;
       if (op === 'lte') return cur <= val;
+      if (op === 'gt') return cur > val;
+      if (op === 'lt') return cur < val;
       return true;
     });
+    if (!base) return false;
+    if (!this._or) return true;
+    return this._or.split(',').some(part => matchOrCond(row, part));
   }
 
   async _run() {
@@ -218,6 +376,15 @@ class Query {
           ...item
         };
         if (this.table === 'tasks' && !row.status) row.status = 'pending';
+        if (this.table === 'job_posts') {
+          if (!row.status) row.status = 'pending';
+          if (!row.expires_at) row.expires_at = daysFromNow(30);
+          row.updated_at = row.updated_at || row.created_at;
+        }
+        if (['resumes', 'job_applications', 'application_notes'].includes(this.table)) {
+          row.updated_at = row.updated_at || row.created_at || new Date().toISOString();
+        }
+        if (this.table === 'application_notes') row.id = row.application_id;
         rows.push(row);
         return clone(decorate(this.table, row, this.cols));
       });
@@ -247,22 +414,43 @@ class Query {
         }
       }
 
+      // 投递会话：模拟通知触发器
+      if (this.table === 'application_messages' && created[0]) {
+        const m = created[0];
+        const app = findApp(m.application_id);
+        if (app) {
+          const other = m.sender_id === app.employer_id ? app.applicant_id : app.employer_id;
+          const sender = profiles.find(p => p.id === m.sender_id);
+          if (other && other !== m.sender_id) {
+            notifyJob(other, 'job_message', app.job_id, app.id,
+              (sender ? sender.nickname : '对方') + '：' + String(m.body).slice(0, 40));
+          }
+        }
+      }
+
       return { data: this._single ? created[0] : created, error: null, count: created.length };
     }
 
     if (this.op === 'upsert') {
       const item = this.payload;
-      const key = this.table === 'profile_contacts' ? 'user_id' : 'id';
+      const key = (this.table === 'profile_contacts' || this.table === 'resumes') ? 'user_id'
+        : this.table === 'application_notes' ? 'application_id'
+        : 'id';
       const idx = rows.findIndex(r => r[key] === item[key]);
-      if (idx >= 0) rows[idx] = { ...rows[idx], ...item };
-      else rows.push({ id: item.id || 'x' + Date.now(), ...item });
+      if (idx >= 0) rows[idx] = { ...rows[idx], ...item, updated_at: new Date().toISOString() };
+      else rows.push({ id: item.id || item[key] || 'x' + Date.now(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...item });
       return { data: [clone(item)], error: null };
     }
 
     const matched = rows.filter(r => this._match(r));
 
     if (this.op === 'update') {
-      for (const r of matched) Object.assign(r, this.payload);
+      for (const r of matched) {
+        Object.assign(r, this.payload);
+        if (['job_posts', 'resumes', 'job_applications', 'application_notes'].includes(this.table)) {
+          r.updated_at = new Date().toISOString();
+        }
+      }
       return { data: matched.map(r => clone(r)), error: null };
     }
 
@@ -332,6 +520,26 @@ function notify(userId, kind, taskId, body) {
     created_at: new Date().toISOString()
   });
 }
+
+function notifyJob(userId, kind, jobId, appId, body) {
+  if (!userId) return;
+  store.notifications.unshift({
+    id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6),
+    user_id: userId,
+    kind,
+    job_id: jobId || null,
+    application_id: appId || null,
+    body,
+    read_at: null,
+    created_at: new Date().toISOString()
+  });
+}
+
+const nowIso = () => new Date().toISOString();
+const todayStr = () => nowIso().slice(0, 10);
+const meProfile = () => profiles.find(p => p.id === currentUserId) || {};
+const findJob = (id) => job_posts.find(j => j.id === id) || null;
+const findApp = (id) => job_applications.find(a => a.id === id) || null;
 
 function findTask(id) { return tasks.find(t => t.id === id) || null; }
 function findBid(id) { return bids.find(b => b.id === id) || null; }
@@ -438,6 +646,142 @@ async function rpc(name, params) {
     return ok();
   }
 
+  if (name === 'approve_job') {
+    if (!meProfile().is_admin) return fail('只有管理员可以审核岗位');
+    const job = findJob(params.p_job);
+    if (!job) return fail('岗位不存在');
+    if (job.status !== 'pending') return fail('只有待审核的岗位可以审核');
+    job.status = 'open';
+    job.reviewed_at = nowIso();
+    job.review_note = null;
+    job.updated_at = nowIso();
+    notifyJob(job.employer_id, 'job_status', job.id, null, '「' + job.title + '」审核通过，已上线');
+    return ok();
+  }
+
+  if (name === 'reject_job') {
+    if (!meProfile().is_admin) return fail('只有管理员可以审核岗位');
+    const job = findJob(params.p_job);
+    if (!job) return fail('岗位不存在');
+    if (job.status !== 'pending') return fail('只有待审核的岗位可以审核');
+    job.status = 'rejected';
+    job.reviewed_at = nowIso();
+    job.review_note = params.p_note || null;
+    job.updated_at = nowIso();
+    notifyJob(job.employer_id, 'job_status', job.id, null, '「' + job.title + '」未通过审核');
+    return ok();
+  }
+
+  if (name === 'close_job') {
+    const job = findJob(params.p_job);
+    if (!job) return fail('岗位不存在');
+    const actor = meProfile();
+    if (!actor.is_admin && job.employer_id !== currentUserId) return fail('只有发布者可以关闭岗位');
+    if (!['open', 'pending'].includes(job.status)) return fail('当前状态不能关闭');
+    job.status = 'closed';
+    job.updated_at = nowIso();
+    if (currentUserId !== job.employer_id) {
+      notifyJob(job.employer_id, 'job_status', job.id, null, '「' + job.title + '」已关闭');
+    }
+    return ok();
+  }
+
+  if (name === 'apply_job') {
+    const user = meProfile();
+    if (!user.id) return fail('请先登录');
+    if (user.banned) return fail('账号已被限制，无法投递');
+    const job = findJob(params.p_job);
+    if (!job) return fail('岗位不存在');
+    if (job.employer_id === currentUserId) return fail('不能投递自己发布的岗位');
+    if (job.status !== 'open') return fail('该岗位未上线或已关闭');
+    if (String(job.expires_at).slice(0, 10) < todayStr()) return fail('该岗位已过期');
+
+    const resume = resumes.find(r => r.user_id === currentUserId);
+    if (!resume) return fail('请先完善在线简历');
+
+    const existing = job_applications.find(a => a.job_id === job.id && a.applicant_id === currentUserId);
+    if (existing) {
+      if (['submitted', 'viewed', 'invited', 'hired'].includes(existing.status)) {
+        return fail('你已经投递过该岗位');
+      }
+      if (existing.status === 'rejected') return fail('该岗位暂不接受重复投递');
+      existing.status = 'submitted';
+      existing.resume_snapshot = clone(resume);
+      existing.cover_letter = params.p_cover || null;
+      existing.viewed_at = null;
+      existing.created_at = nowIso();
+      existing.updated_at = nowIso();
+      notifyJob(job.employer_id, 'job_apply', job.id, existing.id, '求职者重新投递了「' + job.title + '」');
+      return { data: existing.id, error: null };
+    }
+
+    const app = {
+      id: 'a' + Date.now(),
+      job_id: job.id,
+      employer_id: job.employer_id,
+      applicant_id: currentUserId,
+      resume_snapshot: clone(resume),
+      cover_letter: params.p_cover || null,
+      status: 'submitted',
+      viewed_at: null,
+      created_at: nowIso(),
+      updated_at: nowIso()
+    };
+    job_applications.push(app);
+    notifyJob(job.employer_id, 'job_apply', job.id, app.id,
+      (user.nickname || '有人') + ' 投递了「' + job.title + '」');
+    return { data: app.id, error: null };
+  }
+
+  if (name === 'job_app_set_status') {
+    const app = findApp(params.p_app);
+    if (!app) return fail('投递不存在');
+    const next = params.p_status;
+    if (!['viewed', 'invited', 'hired', 'rejected', 'withdrawn'].includes(next)) {
+      return fail('不支持的处理动作');
+    }
+    const actor = meProfile();
+    const job = findJob(app.job_id) || {};
+
+    if (actor.is_admin) {
+      app.status = next;
+      app.updated_at = nowIso();
+      return ok();
+    }
+
+    if (currentUserId === app.employer_id) {
+      if (next === 'withdrawn') return fail('招聘方不能撤回投递');
+      if (['hired', 'rejected', 'withdrawn'].includes(app.status)) return fail('该投递已结束，不能再处理');
+      if (next === 'viewed' && app.status !== 'submitted') return ok();
+      if (next === 'invited' && !['submitted', 'viewed'].includes(app.status)) return fail('当前状态不能邀面试');
+      if (next === 'hired' && app.status !== 'invited') return fail('请先邀面试，再确认录用');
+
+      if (['viewed', 'invited'].includes(next)) app.viewed_at = app.viewed_at || nowIso();
+      app.status = next;
+      app.updated_at = nowIso();
+
+      const label = {
+        viewed: '已查看你的投递', invited: '邀请你面试',
+        hired: '已确认录用', rejected: '认为暂不合适'
+      }[next] || next;
+      notifyJob(app.applicant_id, 'job_status', app.job_id, app.id,
+        '「' + (job.title || '岗位') + '」' + label);
+      return ok();
+    }
+
+    if (currentUserId === app.applicant_id) {
+      if (next !== 'withdrawn') return fail('求职者只能撤回投递');
+      if (!['submitted', 'viewed', 'invited'].includes(app.status)) return fail('当前状态不能撤回');
+      app.status = 'withdrawn';
+      app.updated_at = nowIso();
+      notifyJob(app.employer_id, 'job_status', app.job_id, app.id,
+        '求职者撤回了「' + (job.title || '岗位') + '」的投递');
+      return ok();
+    }
+
+    return fail('无权操作该投递');
+  }
+
   return fail('演示模式不支持这个操作：' + name);
 }
 
@@ -470,6 +814,7 @@ const auth = {
         verified: false,
         rating: 5,
         bio: null,
+        company: null,
         is_admin: false,
         banned: false,
         created_at: new Date().toISOString()
